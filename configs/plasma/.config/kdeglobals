@@ -1,0 +1,19 @@
+# ==============================================================================
+# Aether OS - KDE Plasma Dark/Minimal Color Scheme Configuration
+# ==============================================================================
+
+[General]
+ColorScheme=BreezeDark
+Name=AetherDark
+
+[Colors:Window]
+BackgroundNormal=16,20,25
+ForegroundNormal=226,232,240
+
+[Colors:Selection]
+BackgroundNormal=0,135,175
+ForegroundNormal=255,255,255
+
+[KDE]
+widgetStyle=Breeze
+SingleClick=false

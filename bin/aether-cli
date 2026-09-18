@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Aether OS - Utilitário de Linha de Comando (aether-cli)
+# Gerenciamento pós-instalação: atualização de sistema, alternância de perfis e status.
+# ==============================================================================
+
+set -euo pipefail
+
+# Determina o diretório base do Aether OS
+AETHER_ROOT_DIR="${AETHER_ROOT_DIR:-/etc/aetheros}"
+if [[ ! -d "${AETHER_ROOT_DIR}" ]]; then
+    # Se não estiver no sistema global, busca relativo ao script
+    AETHER_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+
+export AETHER_ROOT_DIR
+# shellcheck source=installer/env.sh
+source "${AETHER_ROOT_DIR}/installer/env.sh"
+# shellcheck source=installer/ui.sh
+source "${AETHER_ROOT_DIR}/installer/ui.sh"
+# shellcheck source=installer/stow.sh
+source "${AETHER_ROOT_DIR}/installer/stow.sh"
+
+AETHER_VERSION="1.0.0"
+
+# Exibe o menu de ajuda do aether-cli
+show_help() {
+    render_step "Aether OS CLI - Versão ${AETHER_VERSION}"
+    echo "Uso: aether <comando> [opções]"
+    echo ""
+    echo "Comandos disponíveis:"
+    echo "  update     Atualiza repositórios oficiais e AUR via Paru e limpa caches."
+    echo "  profile    Menu interativo para alternar ou reaplicar perfis de dotfiles."
+    echo "  status     Exibe o status atual do sistema, usuário e perfil ativo."
+    echo "  help       Exibe este menu de ajuda."
+    echo ""
+}
+
+# Executa sincronização e atualização completa de pacotes oficiais e AUR
+cmd_update() {
+    render_banner
+    render_step "Iniciando atualização completa do sistema Aether OS..."
+
+    if ! command -v paru >/dev/null 2>&1; then
+        render_warning "Paru não encontrado. Recorrendo ao Pacman tradicional..."
+        sudo pacman -Syu --noconfirm
+    else
+        render_step "Atualizando repositórios oficiais e AUR através do Paru..."
+        paru -Syu --noconfirm
+        
+        render_step "Realizando limpeza de cache de pacotes antigos..."
+        paru -Sc --noconfirm
+    fi
+
+    render_success "Sistema e pacotes atualizados com sucesso!"
+}
+
+# Gerencia e alterna os perfis de dotfiles via GNU Stow
+cmd_profile() {
+    render_banner
+    render_step "Gerenciamento de Perfis do Aether OS"
+
+    local selected_profile
+    selected_profile="$(prompt_choice "Selecione a ação ou perfil a ser aplicado" \
+        "Aether-Hyprland (Compositor Wayland dinâmico)" \
+        "Aether-Plasma (KDE Plasma minimal/dark)" \
+        "Re-aplicar Dotfiles Comuns (Kitty, Starship, Neovim, Zsh)" \
+        "Cancelar")"
+
+    case "${selected_profile}" in
+        *"Aether-Hyprland"*)
+            undeploy_dotfiles "Aether-Plasma" || true
+            deploy_dotfiles "Aether-Hyprland"
+            render_success "Perfil Aether-Hyprland aplicado com sucesso!"
+            ;;
+        *"Aether-Plasma"*)
+            undeploy_dotfiles "Aether-Hyprland" || true
+            deploy_dotfiles "Aether-Plasma"
+            render_success "Perfil Aether-Plasma aplicado com sucesso!"
+            ;;
+        *"Dotfiles Comuns"*)
+            deploy_dotfiles "common"
+            render_success "Dotfiles comuns reaplicados com sucesso!"
+            ;;
+        *)
+            render_warning "Operação de perfil cancelada."
+            ;;
+    esac
+}
+
+# Exibe o status da sessão e informações do sistema
+cmd_status() {
+    render_step "Status do Sistema Aether OS"
+    echo "  • Usuário Alvo: ${TARGET_USER}"
+    echo "  • Diretório Home: ${TARGET_HOME}"
+    echo "  • Sessão Wayland: ${XDG_CURRENT_DESKTOP:-Indefinido}"
+    echo "  • Shell Atual: ${SHELL:-Desconhecido}"
+    echo "  • AUR Helper: $(command -v paru || echo 'Não instalado')"
+    echo ""
+}
+
+# Roteador de subcomandos
+main() {
+    local command="${1:-help}"
+
+    case "${command}" in
+        update)
+            cmd_update
+            ;;
+        profile)
+            cmd_profile
+            ;;
+        status)
+            cmd_status
+            ;;
+        help|--help|-h)
+            show_help
+            ;;
+        --version|-v)
+            echo "Aether OS CLI v${AETHER_VERSION}"
+            ;;
+        *)
+            render_error "Comando não reconhecido: ${command}" "Invalid command argument: ${command}"
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"

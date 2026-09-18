@@ -1,0 +1,42 @@
+# ==============================================================================
+# Aether OS - Starship Prompt Minimalista
+# Formato responsivo e elegante alinhado à paleta Aether
+# ==============================================================================
+
+format = """
+[╭─](bold #0087af)$directory$git_branch$git_status$package$nodejs$rust$golang$python
+[╰─❯](bold #00afff) """
+
+right_format = """$cmd_duration$status"""
+
+# Continuação do prompt para comandos de múltiplas linhas
+continuation_prompt = '[∙](bold #0087af) '
+
+[directory]
+style = "bold #5fafff"
+format = "[$path]($style) "
+truncation_length = 3
+truncation_symbol = "…/"
+
+[git_branch]
+style = "bold #0087af"
+format = "on [$symbol$branch]($style) "
+symbol = " "
+
+[git_status]
+style = "bold #ffaf00"
+format = "([$all_status$ahead_behind]($style) )"
+
+[cmd_duration]
+min_time = 2_000
+style = "bold #6c6c6c"
+format = "took [$duration]($style)"
+
+[status]
+style = "bold #ff0055"
+symbol = "✖ "
+format = "[$symbol]($style)"
+disabled = false
+
+[character]
+disabled = true
