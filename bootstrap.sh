@@ -12,26 +12,20 @@ if [[ "${EUID}" -ne 0 ]]; then
     exit 1
 fi
 
-REPO_URL="${AETHER_REPO_URL:-https://github.com/giovannipds/AetherOS.git}"
+REPO_TARBALL="https://github.com/supgi/AetherOS/archive/refs/heads/main.tar.gz"
 TARGET_CLONE_DIR="/tmp/aether-os-installer"
 
 echo "➜ [AETHER OS] Preparando ambiente de instalação..."
 
-# Instala dependências mínimas necessárias para clonar e rodar o assistente
-echo "➜ Sincronizando repositórios e instalando dependências base (git, gum)..."
-pacman -Sy --needed --noconfirm git gum >> /tmp/aether-bootstrap.log 2>&1 || {
-    # Se o gum não estiver no repositório oficial primário, instala git e curl
-    pacman -Sy --needed --noconfirm git curl >> /tmp/aether-bootstrap.log 2>&1
-}
+# Instala o gum em memória se possível (para a TUI)
+echo "➜ Sincronizando dependências visuais..."
+pacman -Sy --needed --noconfirm gum >> /tmp/aether-bootstrap.log 2>&1 || true
 
-# Clona ou atualiza o repositório temporário
-if [[ -d "${TARGET_CLONE_DIR}" ]]; then
-    echo "➜ Atualizando repositório existente..."
-    git -C "${TARGET_CLONE_DIR}" pull --quiet || true
-else
-    echo "➜ Clonando o framework Aether OS..."
-    git clone --depth 1 "${REPO_URL}" "${TARGET_CLONE_DIR}" --quiet
-fi
+# Baixa e extrai diretamente o código do Aether OS sem precisar de conta no GitHub
+echo "➜ Baixando o framework Aether OS diretamente do GitHub..."
+rm -rf "${TARGET_CLONE_DIR}" /tmp/AetherOS-main
+curl -fsSL "${REPO_TARBALL}" | tar -xz -C /tmp
+mv /tmp/AetherOS-main "${TARGET_CLONE_DIR}"
 
 # Concede permissões e executa o instalador mestre
 chmod +x "${TARGET_CLONE_DIR}/install.sh" "${TARGET_CLONE_DIR}/bin/aether-cli"
