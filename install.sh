@@ -287,6 +287,9 @@ main() {
                 target_user="$2"
                 shift 2
                 ;;
+            --dry-run|--test|-t)
+                exec "${BASE_DIR}/test_ui.sh" "$@"
+                ;;
             *)
                 shift
                 ;;

@@ -124,14 +124,19 @@ Ao final, basta confirmar o reinício, retirar o pendrive e desfrutar do seu nov
 
 ---
 
-### Modo Alternativo: Download Direto via Tarball (Sem Git e Sem Conta no GitHub)
+### 🎨 Modo de Teste da Interface (Dry-Run / Simulação)
+
+Você pode testar e aprimorar toda a interface visual do instalador sem precisar formatar discos ou instalar pacotes de verdade. O modo de teste simula todo o fluxo (discos fictícios, seleção de teclado, kernel, fuso, swap, usuários e spinners animados) com 100% de segurança:
 
 ```bash
-curl -fsSL https://github.com/supgi/AetherOS/archive/refs/heads/main.tar.gz | tar -xz
-cd AetherOS-main
-sudo ./install.sh
+# Executa o simulador direto:
+./test_ui.sh
+
+# Ou via flag do instalador:
+./install.sh --dry-run
 ```
-O script identificará que não está em uma mídia de instalação e oferecerá a opção de aplicar apenas as camadas de desktop e dotfiles no seu usuário existente.
+
+---
 
 ---
 

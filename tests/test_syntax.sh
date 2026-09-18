@@ -14,6 +14,7 @@ echo "➜ [TEST] Iniciando verificação de sintaxe de scripts Bash..."
 scripts_to_check=(
     "${ROOT_DIR}/install.sh"
     "${ROOT_DIR}/bootstrap.sh"
+    "${ROOT_DIR}/test_ui.sh"
     "${ROOT_DIR}/bin/aether-cli"
     "${ROOT_DIR}/installer/env.sh"
     "${ROOT_DIR}/installer/ui.sh"
