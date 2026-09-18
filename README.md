@@ -95,12 +95,12 @@ O **Aether OS** possui um fluxo de instalação **100% autônomo** que substitui
 4. **Execute o instalador centralizado do Aether OS com um único comando:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/giovannipds/AetherOS/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/supgi/AetherOS/main/bootstrap.sh | bash
 ```
 
 *(Ou usando bash process substitution):*
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/giovannipds/AetherOS/main/bootstrap.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/supgi/AetherOS/main/bootstrap.sh)
 ```
 
 5. O assistente visual **Charm Gum** iniciará na tela e guiará você por:
@@ -129,7 +129,7 @@ Ao final, basta confirmar o reinício, retirar o pendrive e desfrutar do seu nov
 Caso já possua o Arch Linux instalado e deseje apenas aplicar a interface e configurações do Aether OS:
 
 ```bash
-git clone https://github.com/giovannipds/AetherOS.git
+git clone https://github.com/supgi/AetherOS.git
 cd AetherOS
 chmod +x install.sh bin/aether-cli tests/*.sh
 sudo ./install.sh
