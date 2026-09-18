@@ -12,6 +12,9 @@ source "${SCRIPT_DIR}/env.sh"
 # shellcheck source=installer/ui.sh
 source "${SCRIPT_DIR}/ui.sh"
 
+# Variável global com o disco alvo selecionado
+export TARGET_DISK=""
+
 # Detecta se a máquina iniciou em modo UEFI ou BIOS legado
 is_uefi_system() {
     if [[ -d "/sys/firmware/efi" ]]; then
@@ -27,9 +30,9 @@ list_available_disks() {
     lsblk -d -n -o NAME,SIZE,TYPE,MODEL | awk '$3 == "disk" {print "/dev/" $1 " (" $2 " - " $4 ")"}'
 }
 
-# Solicita ao usuário a seleção do disco para instalação
+# Solicita ao usuário a seleção do disco e armazena na variável global TARGET_DISK
 select_target_disk() {
-    render_step "Detectando discos rígidos e unidades de armazenamento..."
+    render_step "Detectando unidades de armazenamento disponíveis..."
 
     local disk_list=()
     while IFS= read -r line; do
@@ -48,14 +51,14 @@ select_target_disk() {
     selected_entry="$(prompt_choice "Selecione o disco alvo para a instalação do Aether OS" "${disk_list[@]}")"
 
     # Extrai estritamente o dispositivo /dev/... (ex.: /dev/sda ou /dev/nvme0n1)
-    local target_disk
-    target_disk="$(echo "${selected_entry}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
-    echo "${target_disk}"
+    TARGET_DISK="$(echo "${selected_entry}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
+    export TARGET_DISK
 }
 
 # Confirmação visual rigorosa para prevenir perda acidental de dados
 confirm_disk_wipe() {
-    local target_disk="$1"
+    local target_disk="${1:-${TARGET_DISK}}"
+    target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
 
     if has_gum; then
         gum style \
@@ -69,9 +72,9 @@ confirm_disk_wipe() {
             "ATENÇÃO: OPERAÇÃO DESTRUTIVA DE DISCO!" \
             "" \
             "O disco ${target_disk} será completamente formatado." \
-            "Todos os dados, partições e arquivos existentes serão apagados permanentemente."
+            "Todos os dados, partições e arquivos existentes serão apagados permanentemente." >&2
     else
-        echo -e "\n\033[1;31mATENÇÃO: O disco ${target_disk} será formatado e todos os dados serão perdidos!\033[0m\n"
+        echo -e "\n\033[1;31mATENÇÃO: O disco ${target_disk} será formatado e todos os dados serão perdidos!\033[0m\n" >&2
     fi
 
     if ! prompt_confirm "Tem certeza absoluta de que deseja formatar o disco ${target_disk}?"; then
@@ -84,6 +87,7 @@ confirm_disk_wipe() {
 get_partition_path() {
     local disk="$1"
     local part_number="$2"
+    disk="$(echo "${disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
 
     if [[ "${disk}" =~ [0-9]$ ]]; then
         echo "${disk}p${part_number}"
@@ -94,14 +98,20 @@ get_partition_path() {
 
 # Executa o particionamento do disco conforme o modo de boot (UEFI vs BIOS)
 partition_target_disk() {
-    local target_disk="$1"
+    local target_disk="${1:-${TARGET_DISK}}"
     target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
+
+    if [[ -z "${target_disk}" || ! -b "${target_disk}" ]]; then
+        render_error "Dispositivo de bloco inválido ou inexistente: ${target_disk}" "Block device does not exist: ${target_disk}"
+        return 1
+    fi
+
     render_step "Gravando nova tabela de partições no disco ${target_disk}..."
 
     # Desmonta qualquer partição do disco que esteja montada
     umount -q "${target_disk}"* 2>/dev/null || true
 
-    # Zera a tabela de partições
+    # Zera o início do disco para limpar assinaturas antigas
     dd if=/dev/zero of="${target_disk}" bs=1M count=10 status=none 2>/dev/null || true
 
     if is_uefi_system; then
@@ -121,14 +131,15 @@ partition_target_disk() {
     partprobe "${target_disk}" 2>/dev/null || true
     sleep 2
 
-    render_success "Particionamento concluído com sucesso."
+    render_success "Particionamento do disco ${target_disk} concluído com sucesso."
 }
 
 # Formata as partições criadas
 format_target_partitions() {
-    local target_disk="$1"
+    local target_disk="${1:-${TARGET_DISK}}"
     target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
-    render_step "Formatando partições..."
+
+    render_step "Formatando sistemas de arquivos no disco ${target_disk}..."
 
     if is_uefi_system; then
         local boot_part
@@ -149,12 +160,12 @@ format_target_partitions() {
             mkfs.ext4 -F -L "AetherRoot" "${root_part}" >> "${AETHER_LOG_FILE}" 2>&1
     fi
 
-    render_success "Formatação dos sistemas de arquivos finalizada."
+    render_success "Formatação das partições finalizada."
 }
 
 # Monta as partições no diretório de destino (/mnt)
 mount_target_partitions() {
-    local target_disk="$1"
+    local target_disk="${1:-${TARGET_DISK}}"
     local mount_point="${2:-/mnt}"
     target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Aether OS - Módulo de Bootstrap do Sistema Base (Pacstrap, Fstab, Bootloader)
-# Instalação bare-metal do núcleo Arch Linux, localização e GRUB.
+# Instalação bare-metal do núcleo Arch Linux, kernel customizado, swap e GRUB.
 # ==============================================================================
 
 set -euo pipefail
@@ -14,35 +14,37 @@ source "${SCRIPT_DIR}/ui.sh"
 # shellcheck source=installer/disk.sh
 source "${SCRIPT_DIR}/disk.sh"
 
-# Pacotes mínimos essenciais para o boot e administração básica do sistema
-BASE_SYSTEM_PACKAGES=(
-    base
-    base-devel
-    linux
-    linux-firmware
-    git
-    sudo
-    networkmanager
-    nano
-    vim
-    zsh
-    grub
-    efibootmgr
-    dosfstools
-    mtools
-)
-
 # Executa o pacstrap instalando o núcleo do sistema na partição raiz montada
 install_base_system() {
     local mount_point="${1:-/mnt}"
-    render_step "Instalando sistema base via pacstrap em ${mount_point}..."
+    local kernel_choice="${2:-linux}"
+
+    render_step "Instalando sistema base e kernel (${kernel_choice}) via pacstrap em ${mount_point}..."
 
     # Garante que o diretório contenha a assinatura de chaves atualizada
     pacman -Sy --noconfirm archlinux-keyring >> "${AETHER_LOG_FILE}" 2>&1 || true
 
-    pacstrap -K "${mount_point}" "${BASE_SYSTEM_PACKAGES[@]}" >> "${AETHER_LOG_FILE}" 2>&1
+    local base_packages=(
+        base
+        base-devel
+        "${kernel_choice}"
+        "${kernel_choice}-headers"
+        linux-firmware
+        git
+        sudo
+        networkmanager
+        nano
+        vim
+        zsh
+        grub
+        efibootmgr
+        dosfstools
+        mtools
+    )
 
-    render_success "Sistema base e kernel Linux instalados com sucesso."
+    pacstrap -K "${mount_point}" "${base_packages[@]}" >> "${AETHER_LOG_FILE}" 2>&1
+
+    render_success "Sistema base e kernel ${kernel_choice} instalados com sucesso."
 }
 
 # Gera o arquivo de pontos de montagem persistentes (/etc/fstab)
@@ -55,6 +57,45 @@ generate_fstab() {
     render_success "Arquivo /etc/fstab gerado com sucesso."
 }
 
+# Configura o gerenciamento de memória swap (ZRAM ou Swapfile)
+setup_swap() {
+    local mount_point="${1:-/mnt}"
+    local swap_choice="${2:-ZRAM}"
+
+    render_step "Configurando gerenciamento de memória swap (${swap_choice})..."
+
+    case "${swap_choice}" in
+        *"ZRAM"*)
+            # Configuração moderna de ZRAM comprimido em RAM
+            arch-chroot "${mount_point}" pacman -S --needed --noconfirm zram-generator >> "${AETHER_LOG_FILE}" 2>&1 || true
+            mkdir -p "${mount_point}/etc/systemd"
+            cat <<EOF > "${mount_point}/etc/systemd/zram-generator.conf"
+[zram0]
+zram-size = min(ram / 2, 8192)
+compression-algorithm = zstd
+EOF
+            render_success "ZRAM configurado com algoritmo de compressão zstd."
+            ;;
+        *"4 GB"*)
+            render_spinner "Criando Swapfile de 4 GB" \
+                arch-chroot "${mount_point}" /bin/bash -c \
+                "fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile" >> "${AETHER_LOG_FILE}" 2>&1
+            echo "/swapfile none swap defaults 0 0" >> "${mount_point}/etc/fstab"
+            render_success "Swapfile de 4 GB criado e adicionado ao /etc/fstab."
+            ;;
+        *"8 GB"*)
+            render_spinner "Criando Swapfile de 8 GB" \
+                arch-chroot "${mount_point}" /bin/bash -c \
+                "fallocate -l 8G /swapfile && chmod 600 /swapfile && mkswap /swapfile" >> "${AETHER_LOG_FILE}" 2>&1
+            echo "/swapfile none swap defaults 0 0" >> "${mount_point}/etc/fstab"
+            render_success "Swapfile de 8 GB criado e adicionado ao /etc/fstab."
+            ;;
+        *)
+            render_success "Nenhum arquivo ou partição de swap configurado."
+            ;;
+    esac
+}
+
 # Configura fuso horário, locales, teclado e identificação de rede
 configure_system_localization() {
     local mount_point="${1:-/mnt}"
@@ -62,7 +103,7 @@ configure_system_localization() {
     local hostname="${3:-aether-os}"
     local keymap="${4:-br-abnt2}"
 
-    render_step "Configurando regionalização, fuso horário e hostname..."
+    render_step "Configurando regionalização (Teclado: ${keymap}, Fuso: ${timezone}, Hostname: ${hostname})..."
 
     # Fuso horário e relógio do hardware
     ln -sf "/usr/share/zoneinfo/${timezone}" "${mount_point}/etc/localtime"
@@ -87,13 +128,17 @@ EOF
     echo "LANG=pt_BR.UTF-8" > "${mount_point}/etc/locale.conf"
     echo "KEYMAP=${keymap}" > "${mount_point}/etc/vconsole.conf"
 
-    render_success "Localização e rede configuradas (Hostname: ${hostname}, Locale: pt_BR.UTF-8)."
+    # Aplica o mapa de teclado na sessão atual imediatamente
+    loadkeys "${keymap}" 2>/dev/null || true
+
+    render_success "Localização, teclado e rede configurados com sucesso."
 }
 
 # Instala e gera as configurações do bootloader GRUB
 install_bootloader() {
     local mount_point="${1:-/mnt}"
-    local target_disk="$2"
+    local target_disk="${2:-${TARGET_DISK}}"
+    target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
 
     render_step "Instalando e configurando o bootloader GRUB para o Aether OS..."
 

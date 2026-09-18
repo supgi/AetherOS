@@ -91,15 +91,83 @@ run_bare_metal_installation() {
     check_system_architecture
     check_internet_connection
 
-    # 2. Seleção de disco rígido
-    local target_disk
-    target_disk="$(select_target_disk)"
+    # 2. Seleção de disco rígido (define TARGET_DISK global de forma segura)
+    select_target_disk
+    local target_disk="${TARGET_DISK}"
 
     # 3. Confirmação explícita de formatação destrutiva
     confirm_disk_wipe "${target_disk}"
 
-    # 4. Parâmetros de identificação e usuário
-    render_step "Configurações de Identificação e Acesso do Sistema"
+    # 4. Configuração de Teclado (Keymap)
+    render_step "Configuração de Layout do Teclado:"
+    local raw_keymap
+    raw_keymap="$(prompt_choice "Selecione o layout do teclado" \
+        "br-abnt2 (Português Brasil ABNT2 - Padrão)" \
+        "us (Inglês Internacional / US)" \
+        "es (Espanhol)" \
+        "de-latin1 (Alemão)" \
+        "fr (Francês)")"
+
+    local selected_keymap="br-abnt2"
+    if [[ "${raw_keymap}" == *"us "* ]]; then
+        selected_keymap="us"
+    elif [[ "${raw_keymap}" == *"es "* ]]; then
+        selected_keymap="es"
+    elif [[ "${raw_keymap}" == *"de-latin1"* ]]; then
+        selected_keymap="de-latin1"
+    elif [[ "${raw_keymap}" == *"fr "* ]]; then
+        selected_keymap="fr"
+    fi
+    loadkeys "${selected_keymap}" 2>/dev/null || true
+
+    # 5. Seleção de Kernel Linux
+    render_step "Seleção do Kernel Linux:"
+    local raw_kernel
+    raw_kernel="$(prompt_choice "Selecione o Kernel Linux desejado" \
+        "linux (Kernel Padrão Estável - Recomendado)" \
+        "linux-lts (Kernel LTS - Maior Estabilidade e Longo Suporte)" \
+        "linux-zen (Kernel Zen - Otimizado para Desktop e Jogos)" \
+        "linux-hardened (Kernel Hardened - Foco em Segurança Avançada)")"
+
+    local selected_kernel="linux"
+    if [[ "${raw_kernel}" == *"linux-lts"* ]]; then
+        selected_kernel="linux-lts"
+    elif [[ "${raw_kernel}" == *"linux-zen"* ]]; then
+        selected_kernel="linux-zen"
+    elif [[ "${raw_kernel}" == *"linux-hardened"* ]]; then
+        selected_kernel="linux-hardened"
+    fi
+
+    # 6. Seleção de Fuso Horário (Timezone)
+    render_step "Seleção do Fuso Horário:"
+    local raw_timezone
+    raw_timezone="$(prompt_choice "Selecione o Fuso Horário do sistema" \
+        "America/Sao_Paulo (Horário de Brasília - DF, SP, RJ, MG, Sul, GO)" \
+        "America/Manaus (Amazonas)" \
+        "America/Cuiaba (Mato Grosso)" \
+        "America/Fortaleza (Ceará, RN, PB, PI, MA)" \
+        "America/Recife (Pernambuco, AL, SE)" \
+        "America/Bahia (Bahia)" \
+        "America/Belem (Pará, AP)" \
+        "America/Porto_Velho (Rondônia)" \
+        "America/Rio_Branco (Acre)" \
+        "America/Boa_Vista (Roraima)" \
+        "UTC (Tempo Universal Coordenado)")"
+
+    local selected_timezone
+    selected_timezone="$(echo "${raw_timezone}" | awk '{print $1}')"
+
+    # 7. Gerenciamento de Memória Swap
+    render_step "Configuração de Memória Swap:"
+    local selected_swap
+    selected_swap="$(prompt_choice "Selecione a estratégia de Swap (Memória Virtual)" \
+        "ZRAM (Recomendado - Swap comprimido em RAM, ultra rápido)" \
+        "Swapfile de 4 GB" \
+        "Swapfile de 8 GB" \
+        "Sem Swap")"
+
+    # 8. Parâmetros de identificação e usuário
+    render_step "Configurações de Identificação e Acesso:"
 
     local hostname
     hostname="$(prompt_input "Nome do computador (Hostname)" "aether-os")"
@@ -116,11 +184,11 @@ run_bare_metal_installation() {
         user_password="$(prompt_input "Digite uma senha para ${username}" "" true)"
     done
 
-    # 5. Seleção de Perfil de Interface Gráfica
+    # 9. Seleção de Perfil de Interface Gráfica
     render_step "Escolha o Perfil de Interface do Aether OS:"
     local selected_profile
-    selected_profile="$(prompt_choice "Selecione a interface desejada" \
-        "Aether-Hyprland (Wayland dinâmico focado em teclado)" \
+    selected_profile="$(prompt_choice "Selecione a interface gráfica desejada" \
+        "Aether-Hyprland (Wayland dinâmico focado em teclado e produtividade)" \
         "Aether-Plasma (KDE Plasma customizado minimal/dark)")"
 
     local profile_key="Aether-Hyprland"
@@ -128,45 +196,46 @@ run_bare_metal_installation() {
         profile_key="Aether-Plasma"
     fi
 
-    # 6. Resumo e confirmação final
+    # 10. Resumo e confirmação final de instalação
     render_banner
-    render_step "Resumo da Instalação Bare-Metal:"
+    render_step "Resumo Geral da Instalação do Aether OS:"
     echo "  • Disco Alvo: ${target_disk}"
-    echo "  • Modo de Inicialização: $(is_uefi_system && echo 'UEFI (GPT)' || echo 'BIOS Legado (MBR)')"
+    echo "  • Modo de Boot: $(is_uefi_system && echo 'UEFI (GPT)' || echo 'BIOS Legado (MBR)')"
+    echo "  • Layout de Teclado: ${selected_keymap}"
+    echo "  • Kernel Linux: ${selected_kernel}"
+    echo "  • Fuso Horário: ${selected_timezone}"
+    echo "  • Configuração de Swap: ${selected_swap}"
     echo "  • Hostname: ${hostname}"
-    echo "  • Usuário: ${username}"
+    echo "  • Usuário Principal: ${username}"
     echo "  • Perfil Gráfico: ${profile_key}"
     echo ""
 
-    if ! prompt_confirm "Deseja iniciar a gravação do Aether OS agora?"; then
+    if ! prompt_confirm "Deseja iniciar a gravação e instalação do Aether OS agora?"; then
         render_warning "Instalação abortada pelo usuário."
         exit 0
     fi
 
     local mount_point="/mnt"
 
-    # Etapa A: Particionamento, formatação e montagem
+    # Execução das etapas automatizadas
     partition_target_disk "${target_disk}"
     format_target_partitions "${target_disk}"
     mount_target_partitions "${target_disk}" "${mount_point}"
 
-    # Etapa B: Bootstrap do sistema base e fstab
-    install_base_system "${mount_point}"
+    install_base_system "${mount_point}" "${selected_kernel}"
     generate_fstab "${mount_point}"
+    setup_swap "${mount_point}" "${selected_swap}"
 
-    # Etapa C: Localização, teclado e bootloader GRUB
-    configure_system_localization "${mount_point}" "America/Sao_Paulo" "${hostname}" "br-abnt2"
+    configure_system_localization "${mount_point}" "${selected_timezone}" "${hostname}" "${selected_keymap}"
     install_bootloader "${mount_point}" "${target_disk}"
 
-    # Etapa D: Provisionamento de usuários e transição para o ambiente Aether
     setup_chroot_payload "${mount_point}"
     provision_user_in_chroot "${mount_point}" "${username}" "${user_password}"
     execute_aether_desktop_phase "${mount_point}" "${profile_key}" "${username}"
 
-    # Etapa E: Desmontagem limpa
     cleanup_and_unmount "${mount_point}"
 
-    # Etapa F: Conclusão
+    # Tela final comemorativa
     render_banner
     if has_gum; then
         gum style \
@@ -179,11 +248,11 @@ run_bare_metal_installation() {
             --bold \
             "PARABÉNS! O AETHER OS FOI INSTALADO COM SUCESSO!" \
             "" \
-            "Disco: ${target_disk} | Perfil: ${profile_key}" \
-            "Usuário: ${username} | Hostname: ${hostname}" \
+            "Disco: ${target_disk} | Kernel: ${selected_kernel}" \
+            "Perfil: ${profile_key} | Usuário: ${username}" \
             "" \
-            "O sistema base, bootloader e ambiente gráfico estão prontos." \
-            "Remova o pendrive de instalação e reinicie o computador."
+            "O sistema está 100% pronto para uso." \
+            "Remova a mídia de instalação e reinicie o computador."
     else
         echo "============================================================"
         echo "   PARABÉNS! O AETHER OS FOI INSTALADO COM SUCESSO!"
