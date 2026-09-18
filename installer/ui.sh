@@ -18,7 +18,7 @@ has_gum() {
 
 # Renderiza o banner principal de identidade visual do Aether OS
 render_banner() {
-    clear
+    clear >&2
     if has_gum; then
         gum style \
             --foreground "${COLOR_PRIMARY}" \
@@ -35,12 +35,14 @@ render_banner() {
             "/_/    \_\_____|\__|_| |_|_____|_| \_\ \___/|____/ " \
             "" \
             "A E T H E R   O S  •  W A Y L A N D   E D I T I O N" \
-            "Framework Modular e Minimalista para Arch Linux"
+            "Framework Modular e Minimalista para Arch Linux" >&2
     else
-        echo "============================================================"
-        echo "               A E T H E R   O S"
-        echo "   Framework Modular e Minimalista para Arch Linux"
-        echo "============================================================"
+        {
+            echo "============================================================"
+            echo "               A E T H E R   O S"
+            echo "   Framework Modular e Minimalista para Arch Linux"
+            echo "============================================================"
+        } >&2
     fi
 }
 
@@ -52,9 +54,9 @@ render_step() {
             --foreground "${COLOR_ACCENT}" \
             --bold \
             --margin "1 0 0 0" \
-            "➜ ${step_title}"
+            "➜ ${step_title}" >&2
     else
-        echo -e "\n\033[1;36m➜ ${step_title}\033[0m"
+        echo -e "\n\033[1;36m➜ ${step_title}\033[0m" >&2
     fi
 }
 
@@ -65,9 +67,9 @@ render_success() {
         gum style \
             --foreground "${COLOR_SUCCESS}" \
             --bold \
-            "✔ ${message}"
+            "✔ ${message}" >&2
     else
-        echo -e "\033[1;32m✔ ${message}\033[0m"
+        echo -e "\033[1;32m✔ ${message}\033[0m" >&2
     fi
 }
 
@@ -78,9 +80,9 @@ render_warning() {
         gum style \
             --foreground "${COLOR_WARNING}" \
             --bold \
-            "▲ ${message}"
+            "▲ ${message}" >&2
     else
-        echo -e "\033[1;33m▲ ${message}\033[0m"
+        echo -e "\033[1;33m▲ ${message}\033[0m" >&2
     fi
 }
 
@@ -103,10 +105,10 @@ render_error() {
             --margin "1 0" \
             --bold \
             "✖ Ops! ${user_message}" \
-            "Detalhes foram registrados em: ${AETHER_LOG_FILE}"
+            "Detalhes foram registrados em: ${AETHER_LOG_FILE}" >&2
     else
-        echo -e "\n\033[1;31m✖ Ops! ${user_message}\033[0m"
-        echo -e "\033[0;37mDetalhes registrados em: ${AETHER_LOG_FILE}\033[0m\n"
+        echo -e "\n\033[1;31m✖ Ops! ${user_message}\033[0m" >&2
+        echo -e "\033[0;37mDetalhes registrados em: ${AETHER_LOG_FILE}\033[0m\n" >&2
     fi
 }
 
@@ -123,9 +125,9 @@ render_spinner() {
             --title " ${title}..." \
             -- "$@"
     else
-        echo -n "${title}... "
+        echo -n "${title}... " >&2
         "$@"
-        echo "Concluído."
+        echo "Concluído." >&2
     fi
 }
 
@@ -160,7 +162,7 @@ prompt_choice() {
             --limit=1 \
             "${options[@]}"
     else
-        echo "${prompt_header}:"
+        echo "${prompt_header}:" >&2
         select opt in "${options[@]}"; do
             if [[ -n "${opt}" ]]; then
                 echo "${opt}"

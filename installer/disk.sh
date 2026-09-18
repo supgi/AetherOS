@@ -47,9 +47,9 @@ select_target_disk() {
     local selected_entry
     selected_entry="$(prompt_choice "Selecione o disco alvo para a instalação do Aether OS" "${disk_list[@]}")"
 
-    # Extrai o caminho do dispositivo (ex.: /dev/nvme0n1 ou /dev/sda)
+    # Extrai estritamente o dispositivo /dev/... (ex.: /dev/sda ou /dev/nvme0n1)
     local target_disk
-    target_disk="$(echo "${selected_entry}" | awk '{print $1}')"
+    target_disk="$(echo "${selected_entry}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
     echo "${target_disk}"
 }
 
@@ -95,6 +95,7 @@ get_partition_path() {
 # Executa o particionamento do disco conforme o modo de boot (UEFI vs BIOS)
 partition_target_disk() {
     local target_disk="$1"
+    target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
     render_step "Gravando nova tabela de partições no disco ${target_disk}..."
 
     # Desmonta qualquer partição do disco que esteja montada
@@ -126,6 +127,7 @@ partition_target_disk() {
 # Formata as partições criadas
 format_target_partitions() {
     local target_disk="$1"
+    target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
     render_step "Formatando partições..."
 
     if is_uefi_system; then
@@ -154,6 +156,7 @@ format_target_partitions() {
 mount_target_partitions() {
     local target_disk="$1"
     local mount_point="${2:-/mnt}"
+    target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
 
     render_step "Montando partições em ${mount_point}..."
 
