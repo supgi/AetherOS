@@ -124,14 +124,11 @@ Ao final, basta confirmar o reinício, retirar o pendrive e desfrutar do seu nov
 
 ---
 
-### Modo Alternativo: Aplicar em um Arch Linux Já Instalado
-
-Caso já possua o Arch Linux instalado e deseje apenas aplicar a interface e configurações do Aether OS:
+### Modo Alternativo: Download Direto via Tarball (Sem Git e Sem Conta no GitHub)
 
 ```bash
-git clone https://github.com/supgi/AetherOS.git
-cd AetherOS
-chmod +x install.sh bin/aether-cli tests/*.sh
+curl -fsSL https://github.com/supgi/AetherOS/archive/refs/heads/main.tar.gz | tar -xz
+cd AetherOS-main
 sudo ./install.sh
 ```
 O script identificará que não está em uma mídia de instalação e oferecerá a opção de aplicar apenas as camadas de desktop e dotfiles no seu usuário existente.
