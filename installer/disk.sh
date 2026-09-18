@@ -127,8 +127,9 @@ partition_target_disk() {
         parted -s "${target_disk}" set 1 boot on
     fi
 
-    # Força a re-leitura da tabela de partições pelo kernel
+    # Força a re-leitura da tabela de partições pelo kernel e sincronização de udev
     partprobe "${target_disk}" 2>/dev/null || true
+    udevadm settle 2>/dev/null || true
     sleep 2
 
     render_success "Particionamento do disco ${target_disk} concluído com sucesso."
@@ -141,6 +142,10 @@ format_target_partitions() {
 
     render_step "Formatando sistemas de arquivos no disco ${target_disk}..."
 
+    # Garante que os dispositivos de bloco estejam prontos
+    udevadm settle 2>/dev/null || true
+    sleep 1
+
     if is_uefi_system; then
         local boot_part
         local root_part
@@ -148,16 +153,16 @@ format_target_partitions() {
         root_part="$(get_partition_path "${target_disk}" 2)"
 
         render_spinner "Formatando partição EFI (FAT32) em ${boot_part}" \
-            mkfs.fat -F32 "${boot_part}" >> "${AETHER_LOG_FILE}" 2>&1
+            mkfs.fat -F32 "${boot_part}"
 
         render_spinner "Formatando partição Raiz (EXT4) em ${root_part}" \
-            mkfs.ext4 -F -L "AetherRoot" "${root_part}" >> "${AETHER_LOG_FILE}" 2>&1
+            mkfs.ext4 -F -L "AetherRoot" "${root_part}"
     else
         local root_part
         root_part="$(get_partition_path "${target_disk}" 1)"
 
         render_spinner "Formatando partição Raiz (EXT4) em ${root_part}" \
-            mkfs.ext4 -F -L "AetherRoot" "${root_part}" >> "${AETHER_LOG_FILE}" 2>&1
+            mkfs.ext4 -F -L "AetherRoot" "${root_part}"
     fi
 
     render_success "Formatação das partições finalizada."

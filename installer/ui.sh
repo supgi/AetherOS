@@ -121,7 +121,7 @@ render_spinner() {
         gum spin \
             --spinner.foreground "${COLOR_PRIMARY}" \
             --title.foreground "${COLOR_ACCENT}" \
-            --spinner "dots" \
+            --spinner "dot" \
             --title " ${title}..." \
             -- "$@"
     else

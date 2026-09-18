@@ -79,14 +79,14 @@ EOF
         *"4 GB"*)
             render_spinner "Criando Swapfile de 4 GB" \
                 arch-chroot "${mount_point}" /bin/bash -c \
-                "fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile" >> "${AETHER_LOG_FILE}" 2>&1
+                "fallocate -l 4G /swapfile && chmod 600 /swapfile && mkswap /swapfile"
             echo "/swapfile none swap defaults 0 0" >> "${mount_point}/etc/fstab"
             render_success "Swapfile de 4 GB criado e adicionado ao /etc/fstab."
             ;;
         *"8 GB"*)
             render_spinner "Criando Swapfile de 8 GB" \
                 arch-chroot "${mount_point}" /bin/bash -c \
-                "fallocate -l 8G /swapfile && chmod 600 /swapfile && mkswap /swapfile" >> "${AETHER_LOG_FILE}" 2>&1
+                "fallocate -l 8G /swapfile && chmod 600 /swapfile && mkswap /swapfile"
             echo "/swapfile none swap defaults 0 0" >> "${mount_point}/etc/fstab"
             render_success "Swapfile de 8 GB criado e adicionado ao /etc/fstab."
             ;;

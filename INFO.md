@@ -85,7 +85,7 @@ gum confirm \
 gum spin \
   --spinner.foreground="39" \
   --title.foreground="75" \
-  --spinner="dots" \
+  --spinner="dot" \
   --title=" Processando..." -- "$@"
 ```
 

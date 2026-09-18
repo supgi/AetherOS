@@ -94,7 +94,7 @@ deploy_dotfiles() {
         if [[ -d "${AETHER_CONFIGS_DIR}/${module}" ]]; then
             backup_conflicting_files "${module}"
             render_spinner "Vinculando módulo: ${module}" \
-                stow --restow --dir="${AETHER_CONFIGS_DIR}" --target="${TARGET_HOME}" "${module}" >> "${AETHER_LOG_FILE}" 2>&1
+                stow --restow --dir="${AETHER_CONFIGS_DIR}" --target="${TARGET_HOME}" "${module}"
             render_success "Módulo aplicado: ${module}"
         else
             render_warning "Diretório de configuração do módulo não encontrado: configs/${module}"
