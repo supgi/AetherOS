@@ -109,16 +109,19 @@ configure_pacman() {
     render_success "Pacman configurado com downloads paralelos e repositório multilib."
 }
 
-# Instalação e compilação do AUR Helper (Paru)
+# Instalação e compilação do AUR Helper (Yay)
 install_aur_helper() {
-    render_step "Verificando AUR Helper (Paru)..."
+    render_step "Verificando AUR Helper (Yay)..."
 
-    if command -v paru >/dev/null 2>&1; then
+    if command -v yay >/dev/null 2>&1; then
+        render_success "Yay já está instalado no sistema."
+        return 0
+    elif command -v paru >/dev/null 2>&1; then
         render_success "Paru já está instalado no sistema."
         return 0
     fi
 
-    render_warning "Paru não detectado. Iniciando compilação a partir do AUR..."
+    render_warning "Yay não detectado. Iniciando instalação a partir do AUR (yay-bin)..."
 
     # O makepkg NÃO pode ser executado como root puro por segurança
     local build_user="${TARGET_USER}"
@@ -129,22 +132,35 @@ install_aur_helper() {
     fi
 
     local temp_build_dir
-    temp_build_dir="/tmp/aether-paru-build"
+    temp_build_dir="/tmp/aether-yay-build"
     rm -rf "${temp_build_dir}"
     mkdir -p "${temp_build_dir}"
     chown -R "${build_user}:${build_user}" "${temp_build_dir}"
 
-    # Clona paru-bin (compilação rápida pré-empacotada) como o usuário regular
-    su - "${build_user}" -c "git clone https://aur.archlinux.org/paru-bin.git '${temp_build_dir}'" >> "${AETHER_LOG_FILE}" 2>&1
+    # Clona yay-bin (empacotamento rápido pré-compilado oficial) como o usuário regular
+    su - "${build_user}" -c "git clone https://aur.archlinux.org/yay-bin.git '${temp_build_dir}'" >> "${AETHER_LOG_FILE}" 2>&1
     
-    # Executa makepkg para compilar e instalar
+    # Executa makepkg para compilar e instalar o Yay
     if (
         cd "${temp_build_dir}"
         su - "${build_user}" -c "cd '${temp_build_dir}' && makepkg -si --noconfirm" >> "${AETHER_LOG_FILE}" 2>&1
     ); then
-        render_success "Paru instalado com sucesso."
+        render_success "Yay instalado com sucesso."
+        rm -rf "${temp_build_dir}" 2>/dev/null || true
+        return 0
+    fi
+
+    # Fallback preventivo: tenta paru-bin caso yay-bin encontre alguma instabilidade
+    render_warning "Tentando instalar Paru como alternativa de AUR helper..."
+    rm -rf "${temp_build_dir}"
+    mkdir -p "${temp_build_dir}"
+    chown -R "${build_user}:${build_user}" "${temp_build_dir}"
+
+    if su - "${build_user}" -c "git clone https://aur.archlinux.org/paru-bin.git '${temp_build_dir}'" >> "${AETHER_LOG_FILE}" 2>&1 && \
+       (cd "${temp_build_dir}" && su - "${build_user}" -c "cd '${temp_build_dir}' && makepkg -si --noconfirm" >> "${AETHER_LOG_FILE}" 2>&1); then
+        render_success "Paru instalado com sucesso como AUR helper."
     else
-        render_warning "Não foi possível compilar o Paru automaticamente. O sistema continuará com os pacotes oficiais."
+        render_warning "Não foi possível compilar um AUR Helper automaticamente. O sistema continuará com os pacotes oficiais."
     fi
 
     rm -rf "${temp_build_dir}" 2>/dev/null || true
@@ -221,9 +237,11 @@ install_custom_packages() {
     render_step "Instalando aplicativos e ferramentas adicionais (${#custom_pkgs[@]} pacote(s) em custom-packages.conf)..."
 
     local build_user="${TARGET_USER}"
-    local has_paru=false
-    if command -v paru >/dev/null 2>&1 && [[ "${build_user}" != "root" ]]; then
-        has_paru=true
+    local aur_helper=""
+    if command -v yay >/dev/null 2>&1 && [[ "${build_user}" != "root" ]]; then
+        aur_helper="yay"
+    elif command -v paru >/dev/null 2>&1 && [[ "${build_user}" != "root" ]]; then
+        aur_helper="paru"
     fi
 
     for pkg in "${custom_pkgs[@]}"; do
@@ -233,18 +251,32 @@ install_custom_packages() {
         fi
 
         local install_cmd
+        local is_aur=false
+
         if pacman -Si "${pkg}" >/dev/null 2>&1; then
+            # Pacote oficial disponível nos repositórios Arch Linux
             install_cmd="pacman -S --needed --noconfirm '${pkg}' >> '${AETHER_LOG_FILE}' 2>&1"
-        elif [[ "${has_paru}" == "true" ]]; then
-            install_cmd="su - '${build_user}' -c \"paru -S --needed --noconfirm '${pkg}'\" >> '${AETHER_LOG_FILE}' 2>&1"
+        elif [[ -n "${aur_helper}" ]]; then
+            # Pacote do AUR (Arch User Repository)
+            is_aur=true
+            if [[ "${aur_helper}" == "yay" ]]; then
+                install_cmd="su - '${build_user}' -c \"yay -S --needed --noconfirm --answerclean None --answerdiff None --answeredit None --answerupgrade None '${pkg}'\" >> '${AETHER_LOG_FILE}' 2>&1"
+            else
+                install_cmd="su - '${build_user}' -c \"paru -S --needed --noconfirm '${pkg}'\" >> '${AETHER_LOG_FILE}' 2>&1"
+            fi
         else
             install_cmd="false"
         fi
 
-        if render_spinner "Instalando aplicativo: ${pkg}" bash -c "${install_cmd}"; then
+        local spinner_label="Instalando aplicativo: ${pkg}"
+        if [[ "${is_aur}" == "true" ]]; then
+            spinner_label="Instalando do AUR (${aur_helper}): ${pkg}"
+        fi
+
+        if render_spinner "${spinner_label}" bash -c "${install_cmd}"; then
             render_success "Aplicativo instalado com sucesso: ${pkg}"
         else
-            render_warning "Não foi possível instalar o pacote '${pkg}'. Continuando com os demais..."
+            render_warning "Não foi possível encontrar ou instalar '${pkg}' (Pacman/AUR). Continuando..."
         fi
     done
 

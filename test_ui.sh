@@ -264,7 +264,7 @@ run_ui_simulation() {
 
     render_spinner "Configurando swap (${selected_swap})" sleep 0.8
     render_spinner "Provisionando usuário ${username} com privilégios sudo" sleep 0.8
-    render_spinner "Compilando AUR Helper (Paru)" sleep 1.2
+    render_spinner "Instalando AUR Helper (Yay)" sleep 1.2
     render_spinner "Instalando pacotes do perfil ${profile_key}" sleep 1.5
     if [[ ${custom_pkgs_count} -gt 0 ]]; then
         render_spinner "Instalando aplicativos adicionais (${custom_pkgs_count} pacotes de custom-packages.conf)" sleep 1.2

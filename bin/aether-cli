@@ -31,7 +31,7 @@ show_help() {
     echo "Uso: aether <comando> [opções]"
     echo ""
     echo "Comandos disponíveis:"
-    echo "  update     Atualiza repositórios oficiais e AUR via Paru e limpa caches."
+    echo "  update     Atualiza repositórios oficiais e AUR via Yay/Paru e limpa caches."
     echo "  apps       Instala ou sincroniza os pacotes de configs/custom-packages.conf."
     echo "  profile    Menu interativo para alternar ou reaplicar perfis de dotfiles."
     echo "  status     Exibe o status atual do sistema, usuário e perfil ativo."
@@ -44,15 +44,19 @@ cmd_update() {
     render_banner
     render_step "Iniciando atualização completa do sistema Aether OS..."
 
-    if ! command -v paru >/dev/null 2>&1; then
-        render_warning "Paru não encontrado. Recorrendo ao Pacman tradicional..."
-        sudo pacman -Syu --noconfirm
-    else
+    if command -v yay >/dev/null 2>&1; then
+        render_step "Atualizando repositórios oficiais e AUR através do Yay..."
+        yay -Syu --noconfirm --answerclean None --answerdiff None
+        render_step "Realizando limpeza de cache de pacotes antigos..."
+        yay -Sc --noconfirm
+    elif command -v paru >/dev/null 2>&1; then
         render_step "Atualizando repositórios oficiais e AUR através do Paru..."
         paru -Syu --noconfirm
-        
         render_step "Realizando limpeza de cache de pacotes antigos..."
         paru -Sc --noconfirm
+    else
+        render_warning "Nenhum AUR helper encontrado. Recorrendo ao Pacman tradicional..."
+        sudo pacman -Syu --noconfirm
     fi
 
     render_success "Sistema e pacotes atualizados com sucesso!"
@@ -98,7 +102,7 @@ cmd_status() {
     echo "  • Diretório Home: ${TARGET_HOME}"
     echo "  • Sessão Wayland: ${XDG_CURRENT_DESKTOP:-Indefinido}"
     echo "  • Shell Atual: ${SHELL:-Desconhecido}"
-    echo "  • AUR Helper: $(command -v paru || echo 'Não instalado')"
+    echo "  • AUR Helper: $(command -v yay || command -v paru || echo 'Não instalado')"
     echo ""
 }
 

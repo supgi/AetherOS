@@ -61,7 +61,7 @@ run_desktop_setup_flow() {
     # 2. Instalação do Núcleo Base (Core Packages)
     install_core_packages
 
-    # 3. Compilação do AUR Helper (Paru)
+    # 3. Instalação e Compilação do AUR Helper (Yay)
     install_aur_helper
 
     # 4. Instalação do Grupo de Pacotes do Perfil

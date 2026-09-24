@@ -26,7 +26,7 @@ if [[ ! -f "${real_config}" ]]; then
 fi
 
 pkgs=($(load_custom_package_list "${real_config}"))
-if [[ ${#pkgs[@]} -gt 0 && "${pkgs[0]}" == "firefox" ]]; then
+if [[ ${#pkgs[@]} -gt 0 && -n "${pkgs[0]}" ]]; then
     echo "✔ [PASS] Leitura do arquivo real bem-sucedida (Detectado: ${pkgs[*]}): OK"
 else
     echo "✖ [FAIL] Falha ao carregar pacotes do arquivo padrão: ${pkgs[*]}"

@@ -26,7 +26,7 @@ O Aether OS foi concebido sob princípios rigorosos de modularidade e separaçã
 
 1. **Separação de Privilégios (Root vs. Não-Root):**
    - Tarefas administrativas de sistema (`pacman`, `systemctl`, criação de contas) executam com privilégios `sudo`/`root`.
-   - A compilação de pacotes do AUR (`makepkg`/`paru`) e a implantação de links simbólicos de dotfiles (`stow`) são executadas estritamente sob a identidade do usuário não-root.
+   - A compilação de pacotes do AUR (`makepkg`/`yay`) e a implantação de links simbólicos de dotfiles (`stow`) são executadas estritamente sob a identidade do usuário não-root.
 2. **Interface TUI Terminal-First:**
    - Formulários, seletores e barras de progresso desenhados com o `gum`, exibindo paleta fria e escura (Ice Blue, Cyan, Grafite).
 3. **Gerenciamento Declarativo:**
@@ -118,7 +118,7 @@ O instalador fará todo o restante de forma 100% automatizada:
 - Geração automática do `/etc/fstab`.
 - Configuração de localização (`pt_BR.UTF-8`, teclado `br-abnt2`, fuso `America/Sao_Paulo`).
 - Instalação e configuração do bootloader **GRUB** com entrada do Aether OS.
-- Provisionamento de usuário, `sudo` e compilação do AUR Helper (`paru`).
+- Provisionamento de usuário, `sudo` e compilação do AUR Helper (`yay`).
 - Implantação declarativa de dotfiles via **GNU Stow**.
 - Ativação dos daemons essenciais (`NetworkManager`, `bluetooth`, `sddm`, `firewalld`).
 
@@ -146,27 +146,28 @@ Você pode escolher exatamente quais navegadores, ferramentas, editores e plugin
 
 ```text
 # Navegadores
-firefox
-google-chrome
+vivaldi
+# firefox
+# google-chrome
 # brave-bin
 
 # Desenvolvimento
-visual-studio-code-bin
-docker
+# visual-studio-code-bin
+# docker
 
 # Multimídia e Comunicação
-discord
-spotify
-mpv
+# discord
+# spotify
+# mpv
 
 # Plugins e Terminal
-btop
-tmux
-zsh-syntax-highlighting
-zsh-autosuggestions
+# btop
+# tmux
+# zsh-syntax-highlighting
+# zsh-autosuggestions
 ```
 
-* **Suporte Nativo a AUR e Repositórios Oficiais**: O instalador verifica se o pacote está nos repositórios oficiais do Arch (`pacman`) ou no AUR, compilando e instalando automaticamente com o `paru`.
+* **Suporte Nativo a AUR e Repositórios Oficiais**: O instalador verifica se o pacote está nos repositórios oficiais do Arch (`pacman`) ou no AUR, compilando e instalando automaticamente com o `yay` (ou `paru`).
 * **Instalação Imediata**: Os programas listados são baixados e configurados automaticamente na fase final da instalação do sistema operacional.
 * **Sincronização Pós-Instalação**: A qualquer momento, após adicionar novos programas ao arquivo, você pode rodar `aether apps` para instalá-los de uma vez.
 
