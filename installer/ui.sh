@@ -177,29 +177,33 @@ prompt_input() {
     local prompt_text="$1"
     local placeholder="${2:-}"
     local is_password="${3:-false}"
+    local user_input=""
 
     if has_gum; then
         if [[ "${is_password}" == "true" ]]; then
-            gum input \
+            user_input="$(gum input \
                 --password \
                 --prompt="› ${prompt_text}: " \
                 --prompt.foreground="${COLOR_PRIMARY}" \
                 --placeholder="${placeholder}" \
-                --width=50
+                --width=50)"
         else
-            gum input \
+            user_input="$(gum input \
                 --prompt="› ${prompt_text}: " \
                 --prompt.foreground="${COLOR_PRIMARY}" \
                 --placeholder="${placeholder}" \
-                --width=50
+                --width=50)"
         fi
     else
         if [[ "${is_password}" == "true" ]]; then
             read -r -s -p "${prompt_text}: " user_input
-            echo ""
+            echo "" >&2
         else
             read -r -p "${prompt_text}: " user_input
         fi
-        echo "${user_input}"
     fi
+
+    # Remove qualquer retorno de carro (\r) ou quebra de linha acidental
+    user_input="$(echo -n "${user_input}" | tr -d '\r\n')"
+    echo -n "${user_input}"
 }

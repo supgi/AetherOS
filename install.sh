@@ -77,6 +77,10 @@ run_desktop_setup_flow() {
     cp "${AETHER_BIN_DIR}/aether-cli" /usr/local/bin/aether-cli
     chmod +x /usr/local/bin/aether-cli
     render_success "Utilitário /usr/local/bin/aether-cli configurado."
+
+    # 8. Restaura política de sudo com senha para o usuário comum
+    echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/10-wheel-sudo
+    chmod 0440 /etc/sudoers.d/10-wheel-sudo
 }
 
 # ==============================================================================

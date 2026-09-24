@@ -32,18 +32,32 @@ provision_user_in_chroot() {
     local username="$2"
     local password="$3"
 
+    # Sanitiza rigorosamente username e password para garantir linha única
+    username="$(echo -n "${username}" | tr -d '[:space:]')"
+    password="$(echo -n "${password}" | tr -d '\r\n')"
+
     render_step "Provisionando conta de usuário comum e permissões sudo..."
 
-    # Define a senha do root
-    echo "root:${password}" | arch-chroot "${mount_point}" chpasswd
+    # Garante que a senha não esteja vazia
+    if [[ -z "${password}" ]]; then
+        render_error "A senha informada para o usuário está vazia." "Empty password in provision_user_in_chroot"
+        return 1
+    fi
 
-    # Cria o usuário com zsh e grupo administrativo wheel
-    arch-chroot "${mount_point}" useradd -m -G wheel -s /bin/zsh "${username}"
-    echo "${username}:${password}" | arch-chroot "${mount_point}" chpasswd
+    # Define a senha do root com printf em linha única estrita
+    printf "%s:%s\n" "root" "${password}" | arch-chroot "${mount_point}" chpasswd
 
-    # Concede privilégios administrativos sudo ao grupo wheel
+    # Cria o usuário com zsh e grupo administrativo wheel (se ainda não existir)
+    if ! arch-chroot "${mount_point}" id "${username}" >/dev/null 2>&1; then
+        arch-chroot "${mount_point}" useradd -m -G wheel -s /bin/zsh "${username}"
+    fi
+
+    # Define a senha do usuário com printf em linha única estrita
+    printf "%s:%s\n" "${username}" "${password}" | arch-chroot "${mount_point}" chpasswd
+
+    # Concede privilégios administrativos sudo (NOPASSWD temporário para compilação do paru)
     mkdir -p "${mount_point}/etc/sudoers.d"
-    echo "%wheel ALL=(ALL:ALL) ALL" > "${mount_point}/etc/sudoers.d/10-wheel-sudo"
+    echo "%wheel ALL=(ALL:ALL) NOPASSWD: ALL" > "${mount_point}/etc/sudoers.d/10-wheel-sudo"
     chmod 0440 "${mount_point}/etc/sudoers.d/10-wheel-sudo"
 
     render_success "Usuário ${username} provisionado com privilégios administrativos."

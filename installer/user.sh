@@ -76,8 +76,11 @@ setup_target_user() {
                 default_shell="/bin/zsh"
             fi
 
+            new_username="$(echo -n "${new_username}" | tr -d '[:space:]')"
+            new_password="$(echo -n "${new_password}" | tr -d '\r\n')"
+
             useradd -m -G wheel -s "${default_shell}" "${new_username}"
-            echo "${new_username}:${new_password}" | chpasswd
+            printf "%s:%s\n" "${new_username}" "${new_password}" | chpasswd
 
             # Concede privilégios de sudo ao grupo wheel
             echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/10-wheel-sudo
