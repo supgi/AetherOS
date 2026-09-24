@@ -10,6 +10,16 @@ linux-firmware
 arch-install-scripts
 intel-ucode
 amd-ucode
+mkinitcpio
+mkinitcpio-archiso
+
+# Bootloaders e Ferramentas de Inicialização da Mídia
+syslinux
+grub
+efibootmgr
+edk2-shell
+memtest86+
+memtest86+-efi
 
 # Ferramentas de Armazenamento e Particionamento
 parted
@@ -21,10 +31,6 @@ ntfs-3g
 mtools
 gptfdisk
 util-linux
-
-# Bootloader e Firmware
-grub
-efibootmgr
 
 # Rede e Conectividade
 networkmanager

@@ -6,21 +6,16 @@
 # shellcheck disable=SC2034
 
 iso_name="aetheros"
-iso_label="AETHER_LIVE"
+iso_label="AETHER_$(date +%Y%m)"
 iso_publisher="Aether OS <https://github.com/supgi/AetherOS>"
-iso_application="Aether OS Live Installation Media"
+iso_application="Aether OS Live/Installation Media"
 iso_version="$(date +%Y.%m.%d)"
 install_dir="arch"
-build_modes=('iso')
+buildmodes=('iso')
 bootmodes=(
-    'bios.syslinux.mbr'
-    'bios.syslinux.eltorito'
-    'uefi-ia32.systemd-boot.esp'
-    'uefi-x64.systemd-boot.esp'
-    'uefi-ia32.systemd-boot.eltorito'
-    'uefi-x64.systemd-boot.eltorito'
+    'bios.syslinux'
+    'uefi.systemd-boot'
 )
-arch="x86_64"
 pacman_conf="pacman.conf"
 airootfs_image_type="squashfs"
 airootfs_image_tool_options=('-comp' 'zstd')
@@ -34,5 +29,4 @@ file_permissions=(
     ["/opt/aether-os/bootstrap.sh"]="0:0:755"
     ["/opt/aether-os/test_ui.sh"]="0:0:755"
     ["/opt/aether-os/bin/aether-cli"]="0:0:755"
-    ["/opt/aether-os/tests/run_tests.sh"]="0:0:755"
 )
