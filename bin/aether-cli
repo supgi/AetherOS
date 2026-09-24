@@ -7,9 +7,9 @@
 set -euo pipefail
 
 # Determina o diretório base do Aether OS
-AETHER_ROOT_DIR="${AETHER_ROOT_DIR:-/etc/aetheros}"
+AETHER_ROOT_DIR="${AETHER_ROOT_DIR:-/opt/aether-os}"
 if [[ ! -d "${AETHER_ROOT_DIR}" ]]; then
-    # Se não estiver no sistema global, busca relativo ao script
+    # Se não estiver no sistema global (/opt/aether-os), busca relativo ao script
     AETHER_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
