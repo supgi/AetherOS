@@ -88,43 +88,57 @@ AetherOS/
 
 ## 🚀 Como Instalar o Aether OS (Instalador Autônomo Bare-Metal)
 
-O **Aether OS** possui um fluxo de instalação **100% autônomo** que substitui o `archinstall` e instala todo o sistema operacional do zero em sua máquina com apenas **um comando**.
+O **Aether OS** possui suporte a instalação **100% autônoma** que substitui o `archinstall` e instala todo o sistema operacional bare-metal com facilidade.
 
-### Passo a Passo:
+### Opção 1 (Recomendada): Usando a Imagem .ISO Oficial do Aether OS
+A mídia Live oficial já contém todo o instalador embutido em `/opt/aether-os`, eliminando a necessidade de digitar comandos longos com `curl`.
 
-1. **Baixe e grave a ISO oficial do Arch Linux** em um pendrive (utilizando Rufus, BalenaEtcher ou `dd`).
+1. **Grave a ISO do Aether OS** no pendrive (com Ventoy, BalenaEtcher ou `dd`).
 2. **Inicie o computador pelo pendrive** (modo UEFI ou BIOS).
-3. Ao ver o terminal da mídia de instalação (`root@archiso ~ #`), verifique se está conectado à internet (via cabo de rede ou `iwctl` para Wi-Fi).
-4. **Execute o instalador centralizado do Aether OS com um único comando:**
+3. O instalador **iniciará automaticamente** na tela de boas-vindas. Caso prefira iniciar manualmente a qualquer momento, basta digitar:
+   ```bash
+   aether-install
+   ```
+
+---
+
+### Opção 2: Usando a ISO Padrão do Arch Linux (Bootstrap via Web)
+Se estiver utilizando a ISO genérica original do Arch Linux:
+
+1. Inicie o computador pela mídia oficial do Arch Linux e conecte-se à internet.
+2. Execute o instalador com um único comando:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/supgi/AetherOS/main/bootstrap.sh | bash
+   ```
+   *(Ou via process substitution)*:
+   ```bash
+   bash <(curl -fsSL https://raw.githubusercontent.com/supgi/AetherOS/main/bootstrap.sh)
+   ```
+
+---
+
+### 💿 Como Compilar a sua Própria Imagem .ISO (Archiso)
+
+Você pode compilar a imagem ISO oficial do Aether OS diretamente no seu computador em um único comando:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/supgi/AetherOS/main/bootstrap.sh | bash
+# Constrói a ISO gerando os arquivos prontos em ./out/
+sudo ./scripts/build_iso.sh --clean
 ```
 
-*(Ou usando bash process substitution):*
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/supgi/AetherOS/main/bootstrap.sh)
-```
+O script cuidará de verificar o pacote `archiso`, sincronizar os arquivos atualizados do instalador para o sistema de arquivos da mídia (`airootfs`) e gerar os arquivos `.iso` e `.iso.sha256` na pasta `out/`.
 
-5. O assistente visual **Charm Gum** iniciará na tela e guiará você por:
-   - **Seleção de Discos:** Escolha da unidade principal do sistema e, caso detectado mais de um disco (SSD/HD), opção de selecionar um **disco dedicado exclusivamente para a partição `/home`**.
-   - **Confirmação de Segurança:** Aviso duplo detalhando as unidades a serem formatadas.
-   - **Layout de Teclado, Kernel, Fuso Horário e Swap:** Personalização completa (`br-abnt2`, `linux-lts`/`zen`, ZRAM, etc.).
-   - **Contas e Rede:** Definição do Hostname, Usuário principal e Senha.
-   - **Perfil de Interface:** Escolha entre **Aether-Hyprland** (Wayland dinâmico por teclado) ou **Aether-Plasma** (KDE Plasma escuro/minimal).
+> **Dica CI/CD:** O repositório também conta com o workflow automatizado do **GitHub Actions** (`.github/workflows/build-iso.yml`), compilando a ISO diretamente na nuvem a cada Release/Tag.
 
-O instalador fará todo o restante de forma 100% automatizada:
-- Particionamento inteligente (GPT + ESP para UEFI ou MBR para BIOS; particionamento dedicado para `/home` em disco secundário se solicitado).
-- Formatação dos sistemas de arquivos (`mkfs.fat` + `mkfs.ext4`).
-- Instalação do sistema base (`pacstrap`, kernel Linux, firmware e utilitários de rede).
-- Geração automática do `/etc/fstab`.
-- Configuração de localização (`pt_BR.UTF-8`, teclado `br-abnt2`, fuso `America/Sao_Paulo`).
-- Instalação e configuração do bootloader **GRUB** com entrada do Aether OS.
-- Provisionamento de usuário, `sudo` e compilação do AUR Helper (`yay`).
-- Implantação declarativa de dotfiles via **GNU Stow**.
-- Ativação dos daemons essenciais (`NetworkManager`, `bluetooth`, `sddm`, `firewalld`).
+---
 
-Ao final, basta confirmar o reinício, retirar o pendrive e desfrutar do seu novo sistema!
+### 🧭 O que o Assistente Visual Configura:
+O assistente visual **Charm Gum** guiará você passo a passo:
+- **Seleção de Discos:** Escolha da unidade principal e, em múltiplos discos (SSD/HD), opção de usar um **disco dedicado exclusivamente para `/home`**.
+- **Hardware & GPU:** Detecção automática de processador (microcódigo Intel/AMD) e aceleração 3D (Intel, AMD, NVIDIA com Early KMS).
+- **Layout de Teclado, Kernel, Fuso Horário e Swap:** Personalização completa (`br-abnt2`, `linux-zen` recomendado, ZRAM, etc.).
+- **Contas e Rede:** Hostname, usuário e senha, preservando automaticamente o Wi-Fi configurado na Live ISO.
+- **Perfil de Interface:** Escolha entre **Aether-Plasma** (KDE Plasma 6 robusto) ou **Aether-Hyprland** (Wayland dinâmico por teclado).
 
 ---
 

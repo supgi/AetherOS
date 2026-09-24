@@ -1,0 +1,65 @@
+# ==============================================================================
+# Aether OS - Lista de Pacotes para o Ambiente Live (archiso x86_64)
+# ==============================================================================
+
+# Sistema Base & Kernel
+base
+base-devel
+linux
+linux-firmware
+arch-install-scripts
+intel-ucode
+amd-ucode
+
+# Ferramentas de Armazenamento e Particionamento
+parted
+dosfstools
+e2fsprogs
+btrfs-progs
+f2fs-tools
+ntfs-3g
+mtools
+gptfdisk
+util-linux
+
+# Bootloader e Firmware
+grub
+efibootmgr
+
+# Rede e Conectividade
+networkmanager
+wireless_tools
+wpa_supplicant
+iwd
+ethtool
+iproute2
+iputils
+curl
+wget
+openssh
+reflector
+
+# Utilitários de Hardware e Diagnóstico
+pciutils
+usbutils
+lsscsi
+smartmontools
+dmidecode
+htop
+fastfetch
+
+# Terminal, Shell e Interface TUI
+gum
+dialog
+zsh
+git
+nano
+neovim
+bat
+eza
+fzf
+ripgrep
+fd
+which
+sudo
+terminus-font
