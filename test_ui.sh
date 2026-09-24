@@ -144,9 +144,9 @@ run_ui_simulation() {
     render_step "Seleção do Kernel Linux:"
     local raw_kernel
     raw_kernel="$(prompt_choice "Selecione o Kernel Linux desejado" \
-        "linux (Kernel Padrão Estável - Recomendado)" \
+        "linux-zen (Kernel Zen - Otimizado para Desktop, Baixa Latência e Jogos - Recomendado)" \
+        "linux (Kernel Padrão Estável do Arch Linux)" \
         "linux-lts (Kernel LTS - Maior Estabilidade e Longo Suporte)" \
-        "linux-zen (Kernel Zen - Otimizado para Desktop e Jogos)" \
         "linux-hardened (Kernel Hardened - Foco em Segurança Avançada)")"
 
     local selected_kernel
@@ -198,12 +198,12 @@ run_ui_simulation() {
     render_step "Escolha o Perfil de Interface do Aether OS:"
     local selected_profile
     selected_profile="$(prompt_choice "Selecione a interface gráfica desejada" \
-        "Aether-Hyprland (Wayland dinâmico focado em teclado e produtividade)" \
-        "Aether-Plasma (KDE Plasma customizado minimal/dark)")"
+        "Aether-Plasma (KDE Plasma customizado minimal/dark)" \
+        "Aether-Hyprland (Wayland dinâmico focado em teclado e produtividade)")"
 
-    local profile_key="Aether-Hyprland"
-    if [[ "${selected_profile}" == *"Aether-Plasma"* ]]; then
-        profile_key="Aether-Plasma"
+    local profile_key="Aether-Plasma"
+    if [[ "${selected_profile}" == *"Aether-Hyprland"* ]]; then
+        profile_key="Aether-Hyprland"
     fi
 
     # 11. Resumo Geral Pré-Instalação

@@ -17,7 +17,7 @@ source "${SCRIPT_DIR}/disk.sh"
 # Executa o pacstrap instalando o núcleo do sistema na partição raiz montada
 install_base_system() {
     local mount_point="${1:-/mnt}"
-    local kernel_choice="${2:-linux}"
+    local kernel_choice="${2:-linux-zen}"
 
     render_step "Instalando sistema base e kernel (${kernel_choice}) via pacstrap em ${mount_point}..."
 

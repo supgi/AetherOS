@@ -131,18 +131,18 @@ run_bare_metal_installation() {
     render_step "Seleção do Kernel Linux:"
     local raw_kernel
     raw_kernel="$(prompt_choice "Selecione o Kernel Linux desejado" \
-        "linux (Kernel Padrão Estável - Recomendado)" \
+        "linux-zen (Kernel Zen - Otimizado para Desktop, Baixa Latência e Jogos - Recomendado)" \
+        "linux (Kernel Padrão Estável do Arch Linux)" \
         "linux-lts (Kernel LTS - Maior Estabilidade e Longo Suporte)" \
-        "linux-zen (Kernel Zen - Otimizado para Desktop e Jogos)" \
         "linux-hardened (Kernel Hardened - Foco em Segurança Avançada)")"
 
-    local selected_kernel="linux"
+    local selected_kernel="linux-zen"
     if [[ "${raw_kernel}" == *"linux-lts"* ]]; then
         selected_kernel="linux-lts"
-    elif [[ "${raw_kernel}" == *"linux-zen"* ]]; then
-        selected_kernel="linux-zen"
     elif [[ "${raw_kernel}" == *"linux-hardened"* ]]; then
         selected_kernel="linux-hardened"
+    elif [[ "${raw_kernel}" == "linux "* || "${raw_kernel}" == *"linux (Kernel"* ]]; then
+        selected_kernel="linux"
     fi
 
     # 6. Seleção de Fuso Horário (Timezone)
@@ -195,12 +195,12 @@ run_bare_metal_installation() {
     render_step "Escolha o Perfil de Interface do Aether OS:"
     local selected_profile
     selected_profile="$(prompt_choice "Selecione a interface gráfica desejada" \
-        "Aether-Hyprland (Wayland dinâmico focado em teclado e produtividade)" \
-        "Aether-Plasma (KDE Plasma customizado minimal/dark)")"
+        "Aether-Plasma (KDE Plasma customizado minimal/dark)" \
+        "Aether-Hyprland (Wayland dinâmico focado em teclado e produtividade)")"
 
-    local profile_key="Aether-Hyprland"
-    if [[ "${selected_profile}" == *"Aether-Plasma"* ]]; then
-        profile_key="Aether-Plasma"
+    local profile_key="Aether-Plasma"
+    if [[ "${selected_profile}" == *"Aether-Hyprland"* ]]; then
+        profile_key="Aether-Hyprland"
     fi
 
     # 10. Resumo e confirmação final de instalação
@@ -294,7 +294,7 @@ run_bare_metal_installation() {
 # ==============================================================================
 main() {
     local chroot_mode=false
-    local profile="Aether-Hyprland"
+    local profile="Aether-Plasma"
     local target_user="${TARGET_USER}"
 
     # Processamento de flags de linha de comando
@@ -345,12 +345,12 @@ main() {
 
             local selected_profile
             selected_profile="$(prompt_choice "Selecione o perfil desejado" \
-                "Aether-Hyprland (Wayland dinâmico focado em teclado)" \
-                "Aether-Plasma (KDE Plasma customizado minimal/dark)")"
+                "Aether-Plasma (KDE Plasma customizado minimal/dark)" \
+                "Aether-Hyprland (Wayland dinâmico focado em teclado)")"
 
-            local profile_key="Aether-Hyprland"
-            if [[ "${selected_profile}" == *"Aether-Plasma"* ]]; then
-                profile_key="Aether-Plasma"
+            local profile_key="Aether-Plasma"
+            if [[ "${selected_profile}" == *"Aether-Hyprland"* ]]; then
+                profile_key="Aether-Hyprland"
             fi
 
             run_desktop_setup_flow "${profile_key}" "${TARGET_USER}"

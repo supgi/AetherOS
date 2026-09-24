@@ -69,8 +69,8 @@ cmd_profile() {
 
     local selected_profile
     selected_profile="$(prompt_choice "Selecione a ação ou perfil a ser aplicado" \
-        "Aether-Hyprland (Compositor Wayland dinâmico)" \
         "Aether-Plasma (KDE Plasma minimal/dark)" \
+        "Aether-Hyprland (Compositor Wayland dinâmico)" \
         "Re-aplicar Dotfiles Comuns (Kitty, Starship, Neovim, Zsh)" \
         "Cancelar")"
 
