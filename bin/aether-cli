@@ -110,8 +110,35 @@ cmd_status() {
 cmd_apps() {
     render_banner
     render_step "Gerenciamento de Aplicativos Customizados"
-    echo "Lendo definições de: ${AETHER_CONFIGS_DIR}/custom-packages.conf"
-    install_custom_packages
+
+    local current_desktop="${XDG_CURRENT_DESKTOP:-}"
+    local default_choice="Todos (Comuns + Específicos do ambiente atual)"
+
+    local selected_scope
+    selected_scope="$(prompt_choice "Selecione o escopo de pacotes a instalar" \
+        "Perfil Atual (${current_desktop:-Detectado automaticamente})" \
+        "Aether-Hyprland (Comuns + Exclusivos Hyprland)" \
+        "Aether-Plasma (Comuns + Exclusivos Plasma)" \
+        "Todos os pacotes de todas as seções")"
+
+    local target_profile="all"
+    case "${selected_scope}" in
+        *"Hyprland"*)
+            target_profile="Aether-Hyprland"
+            ;;
+        *"Plasma"*)
+            target_profile="Aether-Plasma"
+            ;;
+        *"Perfil Atual"*)
+            target_profile="${current_desktop:-all}"
+            ;;
+        *)
+            target_profile="all"
+            ;;
+    esac
+
+    echo "Lendo definições de: ${AETHER_CONFIGS_DIR}/custom-packages.conf para [${target_profile}]"
+    install_custom_packages "${target_profile}"
 }
 
 # Roteador de subcomandos

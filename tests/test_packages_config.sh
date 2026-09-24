@@ -78,7 +78,51 @@ for expected in "${expected_list[@]}"; do
     fi
 done
 
-# 3. Testa comportamento com arquivo inexistente (deve retornar vazio sem erro)
+# 3. Testa filtragem por seção ([common], [hyprland], [plasma])
+sections_conf="$(mktemp)"
+cat << 'EOF' > "${sections_conf}"
+[common]
+vivaldi
+discord
+
+[hyprland]
+nwg-look
+wlogout
+
+[plasma]
+kdeconnect
+kcalc
+EOF
+
+# Testa Hyprland: deve conter vivaldi, discord, nwg-look, wlogout (NÃO kdeconnect, kcalc)
+hypr_pkgs=($(load_custom_package_list "${sections_conf}" "Aether-Hyprland"))
+if [[ " ${hypr_pkgs[*]} " =~ " vivaldi " && " ${hypr_pkgs[*]} " =~ " nwg-look " && ! " ${hypr_pkgs[*]} " =~ " kdeconnect " ]]; then
+    echo "✔ [PASS] Filtragem de seção Hyprland exclusiva: OK"
+else
+    echo "✖ [FAIL] Falha na filtragem Hyprland: ${hypr_pkgs[*]}"
+    exit 1
+fi
+
+# Testa Plasma: deve conter vivaldi, discord, kdeconnect, kcalc (NÃO nwg-look, wlogout)
+plasma_pkgs=($(load_custom_package_list "${sections_conf}" "Aether-Plasma"))
+if [[ " ${plasma_pkgs[*]} " =~ " vivaldi " && " ${plasma_pkgs[*]} " =~ " kdeconnect " && ! " ${plasma_pkgs[*]} " =~ " nwg-look " ]]; then
+    echo "✔ [PASS] Filtragem de seção Plasma exclusiva: OK"
+else
+    echo "✖ [FAIL] Falha na filtragem Plasma: ${plasma_pkgs[*]}"
+    exit 1
+fi
+
+# Testa 'all': deve conter todos os pacotes das seções
+all_pkgs=($(load_custom_package_list "${sections_conf}" "all"))
+if [[ ${#all_pkgs[@]} -eq 6 ]]; then
+    echo "✔ [PASS] Escopo global 'all' reuniu todos os pacotes das seções (6/6): OK"
+else
+    echo "✖ [FAIL] Falha no escopo 'all': ${all_pkgs[*]}"
+    exit 1
+fi
+rm -f "${sections_conf}"
+
+# 4. Testa comportamento com arquivo inexistente (deve retornar vazio sem erro)
 non_existent="/tmp/non_existent_custom_packages_test.conf"
 empty_res="$(load_custom_package_list "${non_existent}")"
 if [[ -z "${empty_res}" ]]; then

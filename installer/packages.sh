@@ -197,29 +197,101 @@ install_profile_packages() {
     esac
 }
 
-# Lê a lista de pacotes customizados do arquivo de configuração (ignorando comentários e linhas em branco)
+# Lê a lista de pacotes customizados filtrando por perfil (suporta seções [common], [hyprland], [plasma])
 load_custom_package_list() {
     local config_file="${1:-${AETHER_CONFIGS_DIR}/custom-packages.conf}"
+    local target_profile="${2:-all}"
     local -a pkgs=()
 
-    if [[ ! -f "${config_file}" ]]; then
-        return 0
+    # Normaliza o perfil de destino
+    local normalized_profile="all"
+    local raw_profile
+    raw_profile="$(echo "${target_profile}" | tr '[:upper:]' '[:lower:]')"
+    if [[ "${raw_profile}" == *"hypr"* ]]; then
+        normalized_profile="hyprland"
+    elif [[ "${raw_profile}" == *"plasma"* ]]; then
+        normalized_profile="plasma"
     fi
 
-    while IFS= read -r line || [[ -n "${line}" ]]; do
-        line="$(echo "${line}" | sed -e 's/#.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-        if [[ -n "${line}" ]]; then
-            for p in ${line}; do
-                pkgs+=("${p}")
-            done
-        fi
-    done < "${config_file}"
+    # 1. Lê o arquivo principal processando as seções
+    if [[ -f "${config_file}" ]]; then
+        local current_section="common"
 
-    echo "${pkgs[@]}"
+        while IFS= read -r line || [[ -n "${line}" ]]; do
+            # Identifica cabeçalhos de seção, como [common], [hyprland], [plasma]
+            if [[ "${line}" =~ ^[[:space:]]*\[([a-zA-Z0-9_-]+)\][[:space:]]*$ ]]; then
+                local section_name="${BASH_REMATCH[1]}"
+                section_name="$(echo "${section_name}" | tr '[:upper:]' '[:lower:]')"
+                case "${section_name}" in
+                    common|geral|all|default)
+                        current_section="common"
+                        ;;
+                    hypr*|wayland)
+                        current_section="hyprland"
+                        ;;
+                    plasma*|kde)
+                        current_section="plasma"
+                        ;;
+                    *)
+                        current_section="${section_name}"
+                        ;;
+                esac
+                continue
+            fi
+
+            # Remove comentários inline e espaços
+            line="$(echo "${line}" | sed -e 's/#.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+            if [[ -n "${line}" ]]; then
+                # Verifica se a seção atual se aplica ao perfil selecionado
+                if [[ "${current_section}" == "common" || "${normalized_profile}" == "all" || "${current_section}" == "${normalized_profile}" ]]; then
+                    for p in ${line}; do
+                        pkgs+=("${p}")
+                    done
+                fi
+            fi
+        done < "${config_file}"
+    fi
+
+    # 2. Se houver arquivos dedicados para o perfil, também os inclui
+    local profile_specific_file=""
+    if [[ "${normalized_profile}" == "hyprland" ]]; then
+        profile_specific_file="${AETHER_CONFIGS_DIR}/custom-packages-hyprland.conf"
+    elif [[ "${normalized_profile}" == "plasma" ]]; then
+        profile_specific_file="${AETHER_CONFIGS_DIR}/custom-packages-plasma.conf"
+    fi
+
+    if [[ -n "${profile_specific_file}" && -f "${profile_specific_file}" ]]; then
+        while IFS= read -r line || [[ -n "${line}" ]]; do
+            line="$(echo "${line}" | sed -e 's/#.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+            if [[ -n "${line}" && ! "${line}" =~ ^\[.*\]$ ]]; then
+                for p in ${line}; do
+                    pkgs+=("${p}")
+                done
+            fi
+        done < "${profile_specific_file}"
+    fi
+
+    # Deduplicação mantendo a ordem de inserção
+    local -a unique_pkgs=()
+    for p in "${pkgs[@]}"; do
+        local already_in=false
+        for u in "${unique_pkgs[@]:-}"; do
+            if [[ "${u}" == "${p}" ]]; then
+                already_in=true
+                break
+            fi
+        done
+        if [[ "${already_in}" == "false" ]]; then
+            unique_pkgs+=("${p}")
+        fi
+    done
+
+    echo "${unique_pkgs[@]}"
 }
 
 # Instala aplicativos e plugins adicionais definidos pelo usuário em custom-packages.conf
 install_custom_packages() {
+    local profile="${1:-all}"
     local config_file="${AETHER_CONFIGS_DIR}/custom-packages.conf"
 
     if [[ ! -f "${config_file}" ]]; then
@@ -227,14 +299,14 @@ install_custom_packages() {
         return 0
     fi
 
-    local -a custom_pkgs=($(load_custom_package_list "${config_file}"))
+    local -a custom_pkgs=($(load_custom_package_list "${config_file}" "${profile}"))
 
     if [[ ${#custom_pkgs[@]} -eq 0 ]]; then
-        render_step "Nenhum aplicativo customizado ativo em custom-packages.conf (etapa concluída)."
+        render_step "Nenhum aplicativo customizado ativo para o perfil ${profile} (etapa concluída)."
         return 0
     fi
 
-    render_step "Instalando aplicativos e ferramentas adicionais (${#custom_pkgs[@]} pacote(s) em custom-packages.conf)..."
+    render_step "Instalando aplicativos e ferramentas adicionais (${#custom_pkgs[@]} pacote(s) para o perfil ${profile})..."
 
     local build_user="${TARGET_USER}"
     local aur_helper=""

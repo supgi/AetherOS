@@ -52,7 +52,9 @@ AetherOS/
 │   ├── ui.sh                # Componentes TUI do Gum com fallback resiliente
 │   └── user.sh              # Pré-checagens de conectividade, CPU e criação de usuário
 ├── configs/
-│   ├── custom-packages.conf # Lista declarativa de aplicativos e plugins adicionais
+│   ├── custom-packages.conf          # Lista unificada com seções [common], [hyprland], [plasma]
+│   ├── custom-packages-hyprland.conf # Pacotes adicionais exclusivos para Hyprland
+│   ├── custom-packages-plasma.conf   # Pacotes adicionais exclusivos para KDE Plasma
 │   ├── hyprland/            # Configurações do compositor Wayland Hyprland
 │   │   └── .config/hypr/hyprland.conf
 │   ├── plasma/              # Configurações do tema escuro/minimalista KDE Plasma
@@ -142,34 +144,39 @@ Você pode testar e aprimorar toda a interface visual do instalador sem precisar
 
 ## 📦 Lista de Aplicativos Customizados (`configs/custom-packages.conf`)
 
-Você pode escolher exatamente quais navegadores, ferramentas, editores e plugins deseja ter no sistema logo após a instalação. Basta editar o arquivo `configs/custom-packages.conf` antes ou depois de rodar o instalador:
+Você pode escolher exatamente quais navegadores, ferramentas, editores e plugins deseja ter no sistema logo após a instalação, configurando pacotes **compartilhados** ou **exclusivos para cada perfil**:
 
-```text
-# Navegadores
+### Método 1: Seções no arquivo unificado `configs/custom-packages.conf`
+
+```ini
+# Pacotes instalados em AMBOS os perfis (Plasma e Hyprland)
+[common]
 vivaldi
-# firefox
-# google-chrome
-# brave-bin
+visual-studio-code-bin
+discord
+obs-studio
 
-# Desenvolvimento
-# visual-studio-code-bin
-# docker
+# Pacotes instalados EXCLUSIVAMENTE quando escolher o perfil Aether-Hyprland
+[hyprland]
+# wlogout
+# nwg-look
+# grimblast-git
 
-# Multimídia e Comunicação
-# discord
-# spotify
-# mpv
-
-# Plugins e Terminal
-# btop
-# tmux
-# zsh-syntax-highlighting
-# zsh-autosuggestions
+# Pacotes instalados EXCLUSIVAMENTE quando escolher o perfil Aether-Plasma
+[plasma]
+# kdeconnect
+# kcalc
+# partitionmanager
 ```
+
+### Método 2: Arquivos dedicados por versão
+Se preferir separar por arquivos, o instalador também carrega automaticamente:
+* `configs/custom-packages-hyprland.conf`: Programas exclusivos para a versão Hyprland.
+* `configs/custom-packages-plasma.conf`: Programas exclusivos para a versão KDE Plasma.
 
 * **Suporte Nativo a AUR e Repositórios Oficiais**: O instalador verifica se o pacote está nos repositórios oficiais do Arch (`pacman`) ou no AUR, compilando e instalando automaticamente com o `yay` (ou `paru`).
 * **Instalação Imediata**: Os programas listados são baixados e configurados automaticamente na fase final da instalação do sistema operacional.
-* **Sincronização Pós-Instalação**: A qualquer momento, após adicionar novos programas ao arquivo, você pode rodar `aether apps` para instalá-los de uma vez.
+* **Sincronização Pós-Instalação**: A qualquer momento, após adicionar novos programas aos arquivos, você pode rodar `aether apps` para sincronizá-los e instalá-los de uma vez.
 
 ---
 

@@ -225,11 +225,11 @@ run_ui_simulation() {
     echo "  • Perfil Gráfico: ${profile_key}"
     local custom_pkgs_count=0
     if [[ -f "${AETHER_CONFIGS_DIR}/custom-packages.conf" ]]; then
-        local -a custom_pkgs_list=($(load_custom_package_list "${AETHER_CONFIGS_DIR}/custom-packages.conf"))
+        local -a custom_pkgs_list=($(load_custom_package_list "${AETHER_CONFIGS_DIR}/custom-packages.conf" "${profile_key}"))
         custom_pkgs_count=${#custom_pkgs_list[@]}
     fi
     if [[ ${custom_pkgs_count} -gt 0 ]]; then
-        echo "  • Aplicativos Adicionais: ${custom_pkgs_count} pacote(s) em configs/custom-packages.conf"
+        echo "  • Aplicativos Adicionais: ${custom_pkgs_count} pacote(s) para o perfil ${profile_key}"
     fi
     echo ""
 
