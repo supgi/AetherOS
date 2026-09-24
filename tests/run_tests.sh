@@ -24,6 +24,10 @@ bash "${SCRIPT_DIR}/test_modules.sh"
 echo ""
 bash "${SCRIPT_DIR}/test_disk_logic.sh"
 
+# Executa teste de parser de pacotes customizados
+echo ""
+bash "${SCRIPT_DIR}/test_packages_config.sh"
+
 echo ""
 echo "============================================================"
 echo "✔ [DOD APROVADO] Todos os testes passaram com sucesso!"

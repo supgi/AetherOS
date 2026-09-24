@@ -180,3 +180,74 @@ install_profile_packages() {
             ;;
     esac
 }
+
+# Lê a lista de pacotes customizados do arquivo de configuração (ignorando comentários e linhas em branco)
+load_custom_package_list() {
+    local config_file="${1:-${AETHER_CONFIGS_DIR}/custom-packages.conf}"
+    local -a pkgs=()
+
+    if [[ ! -f "${config_file}" ]]; then
+        return 0
+    fi
+
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+        line="$(echo "${line}" | sed -e 's/#.*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        if [[ -n "${line}" ]]; then
+            for p in ${line}; do
+                pkgs+=("${p}")
+            done
+        fi
+    done < "${config_file}"
+
+    echo "${pkgs[@]}"
+}
+
+# Instala aplicativos e plugins adicionais definidos pelo usuário em custom-packages.conf
+install_custom_packages() {
+    local config_file="${AETHER_CONFIGS_DIR}/custom-packages.conf"
+
+    if [[ ! -f "${config_file}" ]]; then
+        render_warning "Arquivo de pacotes customizados não encontrado: ${config_file} (pulando etapa)."
+        return 0
+    fi
+
+    local -a custom_pkgs=($(load_custom_package_list "${config_file}"))
+
+    if [[ ${#custom_pkgs[@]} -eq 0 ]]; then
+        render_step "Nenhum aplicativo customizado ativo em custom-packages.conf (etapa concluída)."
+        return 0
+    fi
+
+    render_step "Instalando aplicativos e ferramentas adicionais (${#custom_pkgs[@]} pacote(s) em custom-packages.conf)..."
+
+    local build_user="${TARGET_USER}"
+    local has_paru=false
+    if command -v paru >/dev/null 2>&1 && [[ "${build_user}" != "root" ]]; then
+        has_paru=true
+    fi
+
+    for pkg in "${custom_pkgs[@]}"; do
+        if pacman -Q "${pkg}" >/dev/null 2>&1; then
+            render_success "Aplicativo já instalado: ${pkg}"
+            continue
+        fi
+
+        local install_cmd
+        if pacman -Si "${pkg}" >/dev/null 2>&1; then
+            install_cmd="pacman -S --needed --noconfirm '${pkg}' >> '${AETHER_LOG_FILE}' 2>&1"
+        elif [[ "${has_paru}" == "true" ]]; then
+            install_cmd="su - '${build_user}' -c \"paru -S --needed --noconfirm '${pkg}'\" >> '${AETHER_LOG_FILE}' 2>&1"
+        else
+            install_cmd="false"
+        fi
+
+        if render_spinner "Instalando aplicativo: ${pkg}" bash -c "${install_cmd}"; then
+            render_success "Aplicativo instalado com sucesso: ${pkg}"
+        else
+            render_warning "Não foi possível instalar o pacote '${pkg}'. Continuando com os demais..."
+        fi
+    done
+
+    render_success "Instalação de aplicativos e pacotes customizados finalizada."
+}
+

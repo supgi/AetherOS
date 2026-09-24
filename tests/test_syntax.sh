@@ -26,6 +26,7 @@ scripts_to_check=(
     "${ROOT_DIR}/installer/bootstrap_system.sh"
     "${ROOT_DIR}/installer/chroot_exec.sh"
     "${ROOT_DIR}/tests/test_disk_logic.sh"
+    "${ROOT_DIR}/tests/test_packages_config.sh"
 )
 
 failure_count=0

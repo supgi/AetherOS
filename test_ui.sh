@@ -223,6 +223,14 @@ run_ui_simulation() {
     echo "  • Hostname: ${hostname}"
     echo "  • Usuário Principal: ${username}"
     echo "  • Perfil Gráfico: ${profile_key}"
+    local custom_pkgs_count=0
+    if [[ -f "${AETHER_CONFIGS_DIR}/custom-packages.conf" ]]; then
+        local -a custom_pkgs_list=($(load_custom_package_list "${AETHER_CONFIGS_DIR}/custom-packages.conf"))
+        custom_pkgs_count=${#custom_pkgs_list[@]}
+    fi
+    if [[ ${custom_pkgs_count} -gt 0 ]]; then
+        echo "  • Aplicativos Adicionais: ${custom_pkgs_count} pacote(s) em configs/custom-packages.conf"
+    fi
     echo ""
 
     if ! prompt_confirm "Deseja iniciar a simulação visual da instalação?"; then
@@ -258,6 +266,10 @@ run_ui_simulation() {
     render_spinner "Provisionando usuário ${username} com privilégios sudo" sleep 0.8
     render_spinner "Compilando AUR Helper (Paru)" sleep 1.2
     render_spinner "Instalando pacotes do perfil ${profile_key}" sleep 1.5
+    if [[ ${custom_pkgs_count} -gt 0 ]]; then
+        render_spinner "Instalando aplicativos adicionais (${custom_pkgs_count} pacotes de custom-packages.conf)" sleep 1.2
+        render_success "Aplicativos customizados simulados com sucesso."
+    fi
     render_spinner "Vinculando dotfiles declarativos via GNU Stow" sleep 1
     render_spinner "Ativando serviços systemd (NetworkManager, sddm, firewalld)" sleep 0.8
     render_success "Todos os serviços e dotfiles foram configurados."

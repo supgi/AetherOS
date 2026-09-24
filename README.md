@@ -52,6 +52,7 @@ AetherOS/
 │   ├── ui.sh                # Componentes TUI do Gum com fallback resiliente
 │   └── user.sh              # Pré-checagens de conectividade, CPU e criação de usuário
 ├── configs/
+│   ├── custom-packages.conf # Lista declarativa de aplicativos e plugins adicionais
 │   ├── hyprland/            # Configurações do compositor Wayland Hyprland
 │   │   └── .config/hypr/hyprland.conf
 │   ├── plasma/              # Configurações do tema escuro/minimalista KDE Plasma
@@ -139,11 +140,41 @@ Você pode testar e aprimorar toda a interface visual do instalador sem precisar
 
 ---
 
+## 📦 Lista de Aplicativos Customizados (`configs/custom-packages.conf`)
+
+Você pode escolher exatamente quais navegadores, ferramentas, editores e plugins deseja ter no sistema logo após a instalação. Basta editar o arquivo `configs/custom-packages.conf` antes ou depois de rodar o instalador:
+
+```text
+# Navegadores
+firefox
+google-chrome
+# brave-bin
+
+# Desenvolvimento
+visual-studio-code-bin
+docker
+
+# Multimídia e Comunicação
+discord
+spotify
+mpv
+
+# Plugins e Terminal
+btop
+tmux
+zsh-syntax-highlighting
+zsh-autosuggestions
+```
+
+* **Suporte Nativo a AUR e Repositórios Oficiais**: O instalador verifica se o pacote está nos repositórios oficiais do Arch (`pacman`) ou no AUR, compilando e instalando automaticamente com o `paru`.
+* **Instalação Imediata**: Os programas listados são baixados e configurados automaticamente na fase final da instalação do sistema operacional.
+* **Sincronização Pós-Instalação**: A qualquer momento, após adicionar novos programas ao arquivo, você pode rodar `aether apps` para instalá-los de uma vez.
+
 ---
 
 ## 🎛 Perfis Disponíveis
 
-* **Aether-Hyprland:** Foco total em produtividade por teclado em ambiente Wayland dinâmico (*tiling*), equipado com `hyprland`, `waybar`, `rofi-wayland`, `swaync` e integrações completas de captura de tela e áudio Pipewire.
+* **Aether-Hyprland:** Foco total em produtividade por teclado em ambiente Wayland dinâmico (*tiling*), equipado com `hyprland`, `waybar`, `rofi`, `swaync` e integrações completas de captura de tela e áudio Pipewire.
 * **Aether-Plasma:** Experiência desktop completa baseada em KDE Plasma com sessão Wayland, pré-configurada no esquema escuro minimalista Breeze Dark e terminal Kitty integrado.
 
 ---
@@ -155,6 +186,9 @@ Após a instalação, o utilitário `aether-cli` estará disponível no seu term
 ```bash
 # Atualização completa de repositórios oficiais e AUR + limpeza de cache:
 aether update
+
+# Instalar ou sincronizar os aplicativos definidos em custom-packages.conf:
+aether apps
 
 # Alternar ou reaplicar perfis de dotfiles (Hyprland / Plasma / Comum):
 aether profile

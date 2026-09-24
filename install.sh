@@ -67,18 +67,21 @@ run_desktop_setup_flow() {
     # 4. Instalação do Grupo de Pacotes do Perfil
     install_profile_packages "${profile}"
 
-    # 5. Implantação de Dotfiles via GNU Stow
+    # 5. Instalação de Aplicativos e Plugins Customizados (custom-packages.conf)
+    install_custom_packages
+
+    # 6. Implantação de Dotfiles via GNU Stow
     deploy_dotfiles "${profile}"
 
-    # 6. Habilitação de Serviços Essenciais (systemctl)
+    # 7. Habilitação de Serviços Essenciais (systemctl)
     enable_core_services
 
-    # 7. Configuração do aether-cli no PATH
+    # 8. Configuração do aether-cli no PATH
     cp "${AETHER_BIN_DIR}/aether-cli" /usr/local/bin/aether-cli
     chmod +x /usr/local/bin/aether-cli
     render_success "Utilitário /usr/local/bin/aether-cli configurado."
 
-    # 8. Restaura política de sudo com senha para o usuário comum
+    # 9. Restaura política de sudo com senha para o usuário comum
     echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/10-wheel-sudo
     chmod 0440 /etc/sudoers.d/10-wheel-sudo
 }
@@ -217,6 +220,14 @@ run_bare_metal_installation() {
     echo "  • Hostname: ${hostname}"
     echo "  • Usuário Principal: ${username}"
     echo "  • Perfil Gráfico: ${profile_key}"
+    local custom_pkgs_count=0
+    if [[ -f "${AETHER_CONFIGS_DIR}/custom-packages.conf" ]]; then
+        local -a custom_pkgs_list=($(load_custom_package_list "${AETHER_CONFIGS_DIR}/custom-packages.conf"))
+        custom_pkgs_count=${#custom_pkgs_list[@]}
+    fi
+    if [[ ${custom_pkgs_count} -gt 0 ]]; then
+        echo "  • Aplicativos Adicionais: ${custom_pkgs_count} pacote(s) em configs/custom-packages.conf"
+    fi
     echo ""
 
     if ! prompt_confirm "Deseja iniciar a gravação e instalação do Aether OS agora?"; then
