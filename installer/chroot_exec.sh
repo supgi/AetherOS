@@ -71,8 +71,18 @@ execute_aether_desktop_phase() {
 
     render_step "Iniciando instalação da interface desktop (${profile}) via chroot..."
 
-    # Executa o install.sh no modo chroot diretamente dentro do novo sistema
-    arch-chroot "${mount_point}" /bin/bash -c \
+    # Copia o log acumulado na mídia de instalação para o sistema destino
+    if [[ -f "${AETHER_LOG_FILE}" ]]; then
+        cp "${AETHER_LOG_FILE}" "${mount_point}/opt/aether-os/aether-install.log" 2>/dev/null || true
+        chmod 666 "${mount_point}/opt/aether-os/aether-install.log" 2>/dev/null || true
+    fi
+
+    # Executa o install.sh no modo chroot diretamente dentro do novo sistema com variáveis limpas
+    arch-chroot "${mount_point}" /usr/bin/env \
+        HOME="/root" \
+        AETHER_ROOT_DIR="/opt/aether-os" \
+        AETHER_LOG_FILE="/opt/aether-os/aether-install.log" \
+        /bin/bash -c \
         "cd /opt/aether-os && ./install.sh --chroot-mode --profile '${profile}' --target-user '${target_user}'"
 
     render_success "Configuração da interface Wayland e dotfiles finalizada com sucesso."

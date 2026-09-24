@@ -52,7 +52,7 @@ SERVICES_PACKAGES=(
 HYPRLAND_PACKAGES=(
     hyprland
     waybar
-    rofi-wayland
+    rofi
     swaync
     hyprpaper
     hyprlock
@@ -69,7 +69,6 @@ HYPRLAND_PACKAGES=(
 # Pacotes do Perfil Aether-Plasma (KDE Plasma Minimal)
 PLASMA_PACKAGES=(
     plasma-desktop
-    plasma-wayland-session
     dolphin
     ark
     spectacle
@@ -139,13 +138,16 @@ install_aur_helper() {
     su - "${build_user}" -c "git clone https://aur.archlinux.org/paru-bin.git '${temp_build_dir}'" >> "${AETHER_LOG_FILE}" 2>&1
     
     # Executa makepkg para compilar e instalar
-    (
+    if (
         cd "${temp_build_dir}"
         su - "${build_user}" -c "cd '${temp_build_dir}' && makepkg -si --noconfirm" >> "${AETHER_LOG_FILE}" 2>&1
-    )
+    ); then
+        render_success "Paru instalado com sucesso."
+    else
+        render_warning "Não foi possível compilar o Paru automaticamente. O sistema continuará com os pacotes oficiais."
+    fi
 
-    rm -rf "${temp_build_dir}"
-    render_success "Paru instalado com sucesso."
+    rm -rf "${temp_build_dir}" 2>/dev/null || true
 }
 
 # Instala os pacotes do núcleo base do Aether OS

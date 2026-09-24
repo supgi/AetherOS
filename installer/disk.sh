@@ -151,7 +151,9 @@ partition_target_disk() {
 
     render_step "Gravando nova tabela de partições no disco principal ${target_disk}..."
 
-    # Desmonta qualquer partição do disco que esteja montada
+    # Desmonta qualquer partição do disco ou montagens ativas anteriores
+    swapoff -a 2>/dev/null || true
+    umount -R /mnt 2>/dev/null || true
     umount -q "${target_disk}"* 2>/dev/null || true
 
     # Zera o início do disco para limpar assinaturas antigas

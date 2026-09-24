@@ -7,11 +7,18 @@
 set -euo pipefail
 
 # Diretório raiz do projeto Aether OS
-export AETHER_ROOT_DIR="${AETHER_ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# Recalcula dinamicamente pelo caminho deste arquivo, garantindo resolução correta dentro e fora de chroots
+AETHER_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export AETHER_ROOT_DIR
 export AETHER_INSTALLER_DIR="${AETHER_ROOT_DIR}/installer"
 export AETHER_CONFIGS_DIR="${AETHER_ROOT_DIR}/configs"
 export AETHER_BIN_DIR="${AETHER_ROOT_DIR}/bin"
 export AETHER_LOG_FILE="${AETHER_ROOT_DIR}/aether-install.log"
+
+# Garante que o diretório de logs e o arquivo existam com permissão de escrita
+mkdir -p "$(dirname "${AETHER_LOG_FILE}")"
+touch "${AETHER_LOG_FILE}" 2>/dev/null || true
+chmod 666 "${AETHER_LOG_FILE}" 2>/dev/null || true
 
 # Tokens de cores do Aether Design System (conforme INFO.md)
 export COLOR_PRIMARY="39"      # Ice Blue (#00afff)
