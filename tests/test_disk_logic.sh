@@ -34,12 +34,27 @@ if [[ "${nvme_p1}" != "/dev/nvme0n1p1" || "${nvme_p2}" != "/dev/nvme0n1p2" ]]; t
 fi
 echo "✔ [PASS] Nomenclatura para disco NVMe (/dev/nvme0n1 -> /dev/nvme0n1p1): OK"
 
-# 3. Teste de detecção de UEFI/BIOS sem erros
+# 3. Teste de nomenclatura de partição para disco /home dedicado (/dev/sdb)
+home_p1="$(get_partition_path "/dev/sdb" 1)"
+if [[ "${home_p1}" != "/dev/sdb1" ]]; then
+    echo "✖ [FAIL] Nomenclatura incorreta para partição de /home: ${home_p1}"
+    exit 1
+fi
+echo "✔ [PASS] Nomenclatura para partição /home dedicada (/dev/sdb -> /dev/sdb1): OK"
+
+# 4. Teste de detecção de UEFI/BIOS sem erros
 if is_uefi_system; then
     echo "✔ [PASS] Detecção de firmware do sistema: UEFI"
 else
     echo "✔ [PASS] Detecção de firmware do sistema: BIOS Legado"
 fi
+
+# 5. Validação das variáveis de disco de /home
+if [[ -z "${TARGET_HOME_DISK+x}" || -z "${HAS_SEPARATE_HOME+x}" ]]; then
+    echo "✖ [FAIL] Variáveis TARGET_HOME_DISK ou HAS_SEPARATE_HOME não declaradas."
+    exit 1
+fi
+echo "✔ [PASS] Variáveis de controle de /home separada inicializadas corretamente: OK"
 
 echo "✔ [SUCCESS] Todos os testes de lógica de disco foram aprovados!"
 exit 0

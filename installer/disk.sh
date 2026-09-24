@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Aether OS - Módulo de Gerenciamento de Discos e Particionamento
-# Detecção de hardware, suporte a UEFI/BIOS, particionamento e formatação.
+# Detecção de hardware, suporte a UEFI/BIOS, particionamento, formatação e /home separada.
 # ==============================================================================
 
 set -euo pipefail
@@ -12,8 +12,10 @@ source "${SCRIPT_DIR}/env.sh"
 # shellcheck source=installer/ui.sh
 source "${SCRIPT_DIR}/ui.sh"
 
-# Variável global com o disco alvo selecionado
+# Variáveis globais de discos selecionados
 export TARGET_DISK=""
+export TARGET_HOME_DISK=""
+export HAS_SEPARATE_HOME=false
 
 # Detecta se a máquina iniciou em modo UEFI ou BIOS legado
 is_uefi_system() {
@@ -30,7 +32,7 @@ list_available_disks() {
     lsblk -d -n -o NAME,SIZE,TYPE,MODEL | awk '$3 == "disk" {print "/dev/" $1 " (" $2 " - " $4 ")"}'
 }
 
-# Solicita ao usuário a seleção do disco e armazena na variável global TARGET_DISK
+# Solicita ao usuário a seleção do disco raiz e opcionalmente disco dedicado para /home
 select_target_disk() {
     render_step "Detectando unidades de armazenamento disponíveis..."
 
@@ -47,18 +49,59 @@ select_target_disk() {
         return 1
     fi
 
+    # 1. Seleção do disco do sistema (Raiz / Boot)
     local selected_entry
-    selected_entry="$(prompt_choice "Selecione o disco alvo para a instalação do Aether OS" "${disk_list[@]}")"
+    selected_entry="$(prompt_choice "Selecione o disco principal (Sistema Raiz e Boot)" "${disk_list[@]}")"
 
-    # Extrai estritamente o dispositivo /dev/... (ex.: /dev/sda ou /dev/nvme0n1)
     TARGET_DISK="$(echo "${selected_entry}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
     export TARGET_DISK
+
+    # 2. Se houver mais de uma unidade de disco, oferece opção de /home separada
+    if [[ ${#disk_list[@]} -gt 1 ]]; then
+        render_step "Configuração de Armazenamento Avançado (/home):"
+        local separate_home_choice
+        separate_home_choice="$(prompt_choice \
+            "Detectamos múltiplas unidades de disco. Deseja utilizar um disco separado para a pasta /home?" \
+            "Não (Instalar sistema operacional e /home no mesmo disco)" \
+            "Sim (Selecionar um segundo disco dedicado para os arquivos dos usuários em /home)")"
+
+        if [[ "${separate_home_choice}" == *"Sim"* ]]; then
+            local home_disk_list=()
+            for d in "${disk_list[@]}"; do
+                local dev_name
+                dev_name="$(echo "${d}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
+                if [[ "${dev_name}" != "${TARGET_DISK}" ]]; then
+                    home_disk_list+=("${d}")
+                fi
+            done
+
+            if [[ ${#home_disk_list[@]} -gt 0 ]]; then
+                local selected_home_entry
+                selected_home_entry="$(prompt_choice "Selecione o disco dedicado exclusivamente para a partição /home" "${home_disk_list[@]}")"
+                TARGET_HOME_DISK="$(echo "${selected_home_entry}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
+                export TARGET_HOME_DISK
+                export HAS_SEPARATE_HOME=true
+                render_success "Disco selecionado para /home: ${TARGET_HOME_DISK}"
+            fi
+        else
+            export TARGET_HOME_DISK=""
+            export HAS_SEPARATE_HOME=false
+        fi
+    else
+        export TARGET_HOME_DISK=""
+        export HAS_SEPARATE_HOME=false
+    fi
 }
 
 # Confirmação visual rigorosa para prevenir perda acidental de dados
 confirm_disk_wipe() {
     local target_disk="${1:-${TARGET_DISK}}"
     target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
+
+    local disks_msg="O disco ${target_disk} será completamente formatado."
+    if [[ "${HAS_SEPARATE_HOME}" == "true" && -n "${TARGET_HOME_DISK}" ]]; then
+        disks_msg="Os discos ${target_disk} (Raiz) e ${TARGET_HOME_DISK} (/home) serão completamente formatados."
+    fi
 
     if has_gum; then
         gum style \
@@ -71,13 +114,13 @@ confirm_disk_wipe() {
             --bold \
             "ATENÇÃO: OPERAÇÃO DESTRUTIVA DE DISCO!" \
             "" \
-            "O disco ${target_disk} será completamente formatado." \
+            "${disks_msg}" \
             "Todos os dados, partições e arquivos existentes serão apagados permanentemente." >&2
     else
-        echo -e "\n\033[1;31mATENÇÃO: O disco ${target_disk} será formatado e todos os dados serão perdidos!\033[0m\n" >&2
+        echo -e "\n\033[1;31mATENÇÃO: ${disks_msg} Todos os dados serão perdidos!\033[0m\n" >&2
     fi
 
-    if ! prompt_confirm "Tem certeza absoluta de que deseja formatar o disco ${target_disk}?"; then
+    if ! prompt_confirm "Tem certeza absoluta de que deseja formatar e particionar a(s) unidade(s)?"; then
         render_warning "Operação cancelada pelo usuário. Nenhuma alteração foi feita no disco."
         exit 0
     fi
@@ -106,7 +149,7 @@ partition_target_disk() {
         return 1
     fi
 
-    render_step "Gravando nova tabela de partições no disco ${target_disk}..."
+    render_step "Gravando nova tabela de partições no disco principal ${target_disk}..."
 
     # Desmonta qualquer partição do disco que esteja montada
     umount -q "${target_disk}"* 2>/dev/null || true
@@ -133,6 +176,29 @@ partition_target_disk() {
     sleep 2
 
     render_success "Particionamento do disco ${target_disk} concluído com sucesso."
+
+    # Particionamento do disco secundário dedicado para /home (se configurado)
+    if [[ "${HAS_SEPARATE_HOME}" == "true" && -n "${TARGET_HOME_DISK}" ]]; then
+        local target_home_disk="${TARGET_HOME_DISK}"
+        render_step "Gravando nova tabela de partições no disco de dados /home (${target_home_disk})..."
+
+        umount -q "${target_home_disk}"* 2>/dev/null || true
+        dd if=/dev/zero of="${target_home_disk}" bs=1M count=10 status=none 2>/dev/null || true
+
+        if is_uefi_system; then
+            parted -s "${target_home_disk}" mklabel gpt
+            parted -s "${target_home_disk}" mkpart "AetherHome" ext4 1MiB 100%
+        else
+            parted -s "${target_home_disk}" mklabel msdos
+            parted -s "${target_home_disk}" mkpart primary ext4 1MiB 100%
+        fi
+
+        partprobe "${target_home_disk}" 2>/dev/null || true
+        udevadm settle 2>/dev/null || true
+        sleep 2
+
+        render_success "Particionamento do disco /home (${target_home_disk}) concluído com sucesso."
+    fi
 }
 
 # Formata as partições criadas
@@ -140,7 +206,7 @@ format_target_partitions() {
     local target_disk="${1:-${TARGET_DISK}}"
     target_disk="$(echo "${target_disk}" | grep -oE '/dev/[a-zA-Z0-9_]+' | head -n 1)"
 
-    render_step "Formatando sistemas de arquivos no disco ${target_disk}..."
+    render_step "Formatando sistemas de arquivos no disco principal ${target_disk}..."
 
     # Garante que os dispositivos de bloco estejam prontos
     udevadm settle 2>/dev/null || true
@@ -165,7 +231,16 @@ format_target_partitions() {
             mkfs.ext4 -F -L "AetherRoot" "${root_part}"
     fi
 
-    render_success "Formatação das partições finalizada."
+    # Formatação da partição /home no segundo disco (se aplicável)
+    if [[ "${HAS_SEPARATE_HOME}" == "true" && -n "${TARGET_HOME_DISK}" ]]; then
+        local home_part
+        home_part="$(get_partition_path "${TARGET_HOME_DISK}" 1)"
+
+        render_spinner "Formatando partição Home dedicada (EXT4) em ${home_part}" \
+            mkfs.ext4 -F -L "AetherHome" "${home_part}"
+    fi
+
+    render_success "Formatação das partições finalizada com sucesso."
 }
 
 # Monta as partições no diretório de destino (/mnt)
@@ -194,5 +269,14 @@ mount_target_partitions() {
         mount "${root_part}" "${mount_point}"
     fi
 
-    render_success "Partições montadas e prontas para instalação base."
+    # Monta a partição /home separada (se configurada)
+    if [[ "${HAS_SEPARATE_HOME}" == "true" && -n "${TARGET_HOME_DISK}" ]]; then
+        local home_part
+        home_part="$(get_partition_path "${TARGET_HOME_DISK}" 1)"
+        mkdir -p "${mount_point}/home"
+        mount "${home_part}" "${mount_point}/home"
+        render_success "Partição dedicada /home montada em ${mount_point}/home."
+    fi
+
+    render_success "Todas as partições foram montadas e preparadas para instalação."
 }

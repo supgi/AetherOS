@@ -104,13 +104,14 @@ bash <(curl -fsSL https://raw.githubusercontent.com/supgi/AetherOS/main/bootstra
 ```
 
 5. O assistente visual **Charm Gum** iniciará na tela e guiará você por:
-   - **Seleção de Disco:** O instalador detecta suas unidades (`/dev/nvme...`, `/dev/sda...`) e permite escolher a unidade alvo.
-   - **Confirmação de Segurança:** Aviso duplo para evitar perda acidental de dados.
+   - **Seleção de Discos:** Escolha da unidade principal do sistema e, caso detectado mais de um disco (SSD/HD), opção de selecionar um **disco dedicado exclusivamente para a partição `/home`**.
+   - **Confirmação de Segurança:** Aviso duplo detalhando as unidades a serem formatadas.
+   - **Layout de Teclado, Kernel, Fuso Horário e Swap:** Personalização completa (`br-abnt2`, `linux-lts`/`zen`, ZRAM, etc.).
    - **Contas e Rede:** Definição do Hostname, Usuário principal e Senha.
    - **Perfil de Interface:** Escolha entre **Aether-Hyprland** (Wayland dinâmico por teclado) ou **Aether-Plasma** (KDE Plasma escuro/minimal).
 
 O instalador fará todo o restante de forma 100% automatizada:
-- Particionamento inteligente (GPT + ESP para UEFI ou MBR para BIOS).
+- Particionamento inteligente (GPT + ESP para UEFI ou MBR para BIOS; particionamento dedicado para `/home` em disco secundário se solicitado).
 - Formatação dos sistemas de arquivos (`mkfs.fat` + `mkfs.ext4`).
 - Instalação do sistema base (`pacstrap`, kernel Linux, firmware e utilitários de rede).
 - Geração automática do `/etc/fstab`.

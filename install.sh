@@ -199,7 +199,12 @@ run_bare_metal_installation() {
     # 10. Resumo e confirmação final de instalação
     render_banner
     render_step "Resumo Geral da Instalação do Aether OS:"
-    echo "  • Disco Alvo: ${target_disk}"
+    echo "  • Disco Raiz (Root): ${target_disk}"
+    if [[ "${HAS_SEPARATE_HOME:-false}" == "true" && -n "${TARGET_HOME_DISK:-}" ]]; then
+        echo "  • Disco de Usuários (/home): ${TARGET_HOME_DISK} (Dedicado)"
+    else
+        echo "  • Partição /home: Mesmo disco do sistema (${target_disk})"
+    fi
     echo "  • Modo de Boot: $(is_uefi_system && echo 'UEFI (GPT)' || echo 'BIOS Legado (MBR)')"
     echo "  • Layout de Teclado: ${selected_keymap}"
     echo "  • Kernel Linux: ${selected_kernel}"
@@ -235,6 +240,11 @@ run_bare_metal_installation() {
 
     cleanup_and_unmount "${mount_point}"
 
+    local disk_summary="${target_disk}"
+    if [[ "${HAS_SEPARATE_HOME:-false}" == "true" && -n "${TARGET_HOME_DISK:-}" ]]; then
+        disk_summary="${target_disk} (Raiz) + ${TARGET_HOME_DISK} (/home)"
+    fi
+
     # Tela final comemorativa
     render_banner
     if has_gum; then
@@ -248,7 +258,7 @@ run_bare_metal_installation() {
             --bold \
             "PARABÉNS! O AETHER OS FOI INSTALADO COM SUCESSO!" \
             "" \
-            "Disco: ${target_disk} | Kernel: ${selected_kernel}" \
+            "Discos: ${disk_summary} | Kernel: ${selected_kernel}" \
             "Perfil: ${profile_key} | Usuário: ${username}" \
             "" \
             "O sistema está 100% pronto para uso." \
