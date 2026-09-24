@@ -16,6 +16,8 @@ INSTALLER_DIR="${ROOT_DIR}/installer"
 source "${INSTALLER_DIR}/env.sh"
 # shellcheck source=installer/ui.sh
 source "${INSTALLER_DIR}/ui.sh"
+# shellcheck source=installer/options.sh
+source "${INSTALLER_DIR}/options.sh"
 
 # Indicador de modo de simulação
 export AETHER_TEST_MODE=true
@@ -126,56 +128,30 @@ run_ui_simulation() {
     # 5. Configuração de Teclado (Keymap)
     render_step "Configuração de Layout do Teclado:"
     local raw_keymap
-    raw_keymap="$(prompt_choice "Selecione o layout do teclado" \
-        "br-abnt2 (Português Brasil ABNT2 - Padrão)" \
-        "us (Inglês Internacional / US)" \
-        "es (Espanhol)" \
-        "de-latin1 (Alemão)" \
-        "fr (Francês)")"
-
-    local selected_keymap="br-abnt2"
-    if [[ "${raw_keymap}" == *"us "* ]]; then
-        selected_keymap="us"
-    elif [[ "${raw_keymap}" == *"es "* ]]; then
-        selected_keymap="es"
-    fi
+    raw_keymap="$(prompt_choice "Selecione o layout do teclado" "${AETHER_KEYMAP_OPTIONS[@]}")"
+    local selected_keymap
+    selected_keymap="$(get_keymap_value "${raw_keymap}")"
 
     # 6. Seleção de Kernel Linux
     render_step "Seleção do Kernel Linux:"
     local raw_kernel
-    raw_kernel="$(prompt_choice "Selecione o Kernel Linux desejado" \
-        "linux-zen (Kernel Zen - Otimizado para Desktop, Baixa Latência e Jogos - Recomendado)" \
-        "linux (Kernel Padrão Estável do Arch Linux)" \
-        "linux-lts (Kernel LTS - Maior Estabilidade e Longo Suporte)" \
-        "linux-hardened (Kernel Hardened - Foco em Segurança Avançada)")"
-
+    raw_kernel="$(prompt_choice "Selecione o Kernel Linux desejado" "${AETHER_KERNEL_OPTIONS[@]}")"
     local selected_kernel
-    selected_kernel="$(echo "${raw_kernel}" | awk '{print $1}')"
+    selected_kernel="$(get_kernel_value "${raw_kernel}")"
 
     # 7. Seleção de Fuso Horário
     render_step "Seleção do Fuso Horário:"
     local raw_timezone
-    raw_timezone="$(prompt_choice "Selecione o Fuso Horário do sistema" \
-        "America/Sao_Paulo (Horário de Brasília - DF, SP, RJ, MG, Sul, GO)" \
-        "America/Manaus (Amazonas)" \
-        "America/Cuiaba (Mato Grosso)" \
-        "America/Fortaleza (Ceará, RN, PB, PI, MA)" \
-        "America/Recife (Pernambuco, AL, SE)" \
-        "America/Bahia (Bahia)" \
-        "America/Belem (Pará, AP)" \
-        "UTC (Tempo Universal Coordenado)")"
-
+    raw_timezone="$(prompt_choice "Selecione o Fuso Horário do sistema" "${AETHER_TIMEZONE_OPTIONS[@]}")"
     local selected_timezone
-    selected_timezone="$(echo "${raw_timezone}" | awk '{print $1}')"
+    selected_timezone="$(get_timezone_value "${raw_timezone}")"
 
     # 8. Estratégia de Swap
     render_step "Configuração de Memória Swap:"
+    local raw_swap
+    raw_swap="$(prompt_choice "Selecione a estratégia de Swap (Memória Virtual)" "${AETHER_SWAP_OPTIONS[@]}")"
     local selected_swap
-    selected_swap="$(prompt_choice "Selecione a estratégia de Swap (Memória Virtual)" \
-        "ZRAM (Recomendado - Swap comprimido em RAM, ultra rápido)" \
-        "Swapfile de 4 GB" \
-        "Swapfile de 8 GB" \
-        "Sem Swap")"
+    selected_swap="$(get_swap_value "${raw_swap}")"
 
     # 9. Coleta de Identificação e Credenciais
     render_step "Configurações de Identificação e Acesso:"
@@ -196,15 +172,10 @@ run_ui_simulation() {
 
     # 10. Seleção de Perfil Gráfico
     render_step "Escolha o Perfil de Interface do Aether OS:"
-    local selected_profile
-    selected_profile="$(prompt_choice "Selecione a interface gráfica desejada" \
-        "Aether-Plasma (KDE Plasma customizado minimal/dark)" \
-        "Aether-Hyprland (Wayland dinâmico focado em teclado e produtividade)")"
-
-    local profile_key="Aether-Plasma"
-    if [[ "${selected_profile}" == *"Aether-Hyprland"* ]]; then
-        profile_key="Aether-Hyprland"
-    fi
+    local raw_profile
+    raw_profile="$(prompt_choice "Selecione a interface gráfica desejada" "${AETHER_PROFILE_OPTIONS[@]}")"
+    local profile_key
+    profile_key="$(get_profile_value "${raw_profile}")"
 
     # 11. Resumo Geral Pré-Instalação
     render_banner

@@ -25,8 +25,11 @@ scripts_to_check=(
     "${ROOT_DIR}/installer/disk.sh"
     "${ROOT_DIR}/installer/bootstrap_system.sh"
     "${ROOT_DIR}/installer/chroot_exec.sh"
+    "${ROOT_DIR}/installer/options.sh"
+    "${ROOT_DIR}/installer/gpu.sh"
     "${ROOT_DIR}/tests/test_disk_logic.sh"
     "${ROOT_DIR}/tests/test_packages_config.sh"
+    "${ROOT_DIR}/tests/test_gpu_and_options.sh"
 )
 
 failure_count=0

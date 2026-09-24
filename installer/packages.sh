@@ -46,6 +46,8 @@ SERVICES_PACKAGES=(
     bluez-utils
     sddm
     firewalld
+    qt6-wayland
+    qt5-wayland
 )
 
 # Pacotes do Perfil Aether-Hyprland (Terminal-first Wayland)
@@ -66,15 +68,24 @@ HYPRLAND_PACKAGES=(
     polkit-kde-agent
 )
 
-# Pacotes do Perfil Aether-Plasma (KDE Plasma Minimal)
+# Pacotes do Perfil Aether-Plasma (KDE Plasma 6 / Qt 6)
 PLASMA_PACKAGES=(
+    plasma-workspace
     plasma-desktop
+    plasma-nm
+    plasma-pa
+    powerdevil
+    kscreen
     dolphin
     ark
     spectacle
     kate
+    konsole
     sddm-kcm
     xdg-desktop-portal-kde
+    kwayland
+    polkit-kde-agent
+    kwallet-pam
 )
 
 # Otimiza o arquivo de configuração do Pacman (/etc/pacman.conf)

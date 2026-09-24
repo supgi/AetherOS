@@ -28,6 +28,10 @@ bash "${SCRIPT_DIR}/test_disk_logic.sh"
 echo ""
 bash "${SCRIPT_DIR}/test_packages_config.sh"
 
+# Executa teste de opções de menus e aceleração gráfica GPU
+echo ""
+bash "${SCRIPT_DIR}/test_gpu_and_options.sh"
+
 echo ""
 echo "============================================================"
 echo "✔ [DOD APROVADO] Todos os testes passaram com sucesso!"

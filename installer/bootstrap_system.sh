@@ -42,6 +42,15 @@ install_base_system() {
         mtools
     )
 
+    # Detecção dinâmica de microcódigo de CPU (Intel ou AMD)
+    if grep -q "AuthenticAMD" /proc/cpuinfo 2>/dev/null; then
+        render_step "Processador AMD detectado. Adicionando amd-ucode ao pacstrap..."
+        base_packages+=(amd-ucode)
+    elif grep -q "GenuineIntel" /proc/cpuinfo 2>/dev/null; then
+        render_step "Processador Intel detectado. Adicionando intel-ucode ao pacstrap..."
+        base_packages+=(intel-ucode)
+    fi
+
     pacstrap -K "${mount_point}" "${base_packages[@]}" >> "${AETHER_LOG_FILE}" 2>&1
 
     render_success "Sistema base e kernel ${kernel_choice} instalados com sucesso."

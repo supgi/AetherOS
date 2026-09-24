@@ -29,6 +29,10 @@ source "${INSTALLER_DIR}/disk.sh"
 source "${INSTALLER_DIR}/bootstrap_system.sh"
 # shellcheck source=installer/chroot_exec.sh
 source "${INSTALLER_DIR}/chroot_exec.sh"
+# shellcheck source=installer/options.sh
+source "${INSTALLER_DIR}/options.sh"
+# shellcheck source=installer/gpu.sh
+source "${INSTALLER_DIR}/gpu.sh"
 
 # Tratamento global de erros inesperados
 trap 'handle_error $? $LINENO' ERR
@@ -108,70 +112,31 @@ run_bare_metal_installation() {
     # 4. Configuração de Teclado (Keymap)
     render_step "Configuração de Layout do Teclado:"
     local raw_keymap
-    raw_keymap="$(prompt_choice "Selecione o layout do teclado" \
-        "br-abnt2 (Português Brasil ABNT2 - Padrão)" \
-        "us (Inglês Internacional / US)" \
-        "es (Espanhol)" \
-        "de-latin1 (Alemão)" \
-        "fr (Francês)")"
-
-    local selected_keymap="br-abnt2"
-    if [[ "${raw_keymap}" == *"us "* ]]; then
-        selected_keymap="us"
-    elif [[ "${raw_keymap}" == *"es "* ]]; then
-        selected_keymap="es"
-    elif [[ "${raw_keymap}" == *"de-latin1"* ]]; then
-        selected_keymap="de-latin1"
-    elif [[ "${raw_keymap}" == *"fr "* ]]; then
-        selected_keymap="fr"
-    fi
+    raw_keymap="$(prompt_choice "Selecione o layout do teclado" "${AETHER_KEYMAP_OPTIONS[@]}")"
+    local selected_keymap
+    selected_keymap="$(get_keymap_value "${raw_keymap}")"
     loadkeys "${selected_keymap}" 2>/dev/null || true
 
     # 5. Seleção de Kernel Linux
     render_step "Seleção do Kernel Linux:"
     local raw_kernel
-    raw_kernel="$(prompt_choice "Selecione o Kernel Linux desejado" \
-        "linux-zen (Kernel Zen - Otimizado para Desktop, Baixa Latência e Jogos - Recomendado)" \
-        "linux (Kernel Padrão Estável do Arch Linux)" \
-        "linux-lts (Kernel LTS - Maior Estabilidade e Longo Suporte)" \
-        "linux-hardened (Kernel Hardened - Foco em Segurança Avançada)")"
-
-    local selected_kernel="linux-zen"
-    if [[ "${raw_kernel}" == *"linux-lts"* ]]; then
-        selected_kernel="linux-lts"
-    elif [[ "${raw_kernel}" == *"linux-hardened"* ]]; then
-        selected_kernel="linux-hardened"
-    elif [[ "${raw_kernel}" == "linux "* || "${raw_kernel}" == *"linux (Kernel"* ]]; then
-        selected_kernel="linux"
-    fi
+    raw_kernel="$(prompt_choice "Selecione o Kernel Linux desejado" "${AETHER_KERNEL_OPTIONS[@]}")"
+    local selected_kernel
+    selected_kernel="$(get_kernel_value "${raw_kernel}")"
 
     # 6. Seleção de Fuso Horário (Timezone)
     render_step "Seleção do Fuso Horário:"
     local raw_timezone
-    raw_timezone="$(prompt_choice "Selecione o Fuso Horário do sistema" \
-        "America/Sao_Paulo (Horário de Brasília - DF, SP, RJ, MG, Sul, GO)" \
-        "America/Manaus (Amazonas)" \
-        "America/Cuiaba (Mato Grosso)" \
-        "America/Fortaleza (Ceará, RN, PB, PI, MA)" \
-        "America/Recife (Pernambuco, AL, SE)" \
-        "America/Bahia (Bahia)" \
-        "America/Belem (Pará, AP)" \
-        "America/Porto_Velho (Rondônia)" \
-        "America/Rio_Branco (Acre)" \
-        "America/Boa_Vista (Roraima)" \
-        "UTC (Tempo Universal Coordenado)")"
-
+    raw_timezone="$(prompt_choice "Selecione o Fuso Horário do sistema" "${AETHER_TIMEZONE_OPTIONS[@]}")"
     local selected_timezone
-    selected_timezone="$(echo "${raw_timezone}" | awk '{print $1}')"
+    selected_timezone="$(get_timezone_value "${raw_timezone}")"
 
     # 7. Gerenciamento de Memória Swap
     render_step "Configuração de Memória Swap:"
+    local raw_swap
+    raw_swap="$(prompt_choice "Selecione a estratégia de Swap (Memória Virtual)" "${AETHER_SWAP_OPTIONS[@]}")"
     local selected_swap
-    selected_swap="$(prompt_choice "Selecione a estratégia de Swap (Memória Virtual)" \
-        "ZRAM (Recomendado - Swap comprimido em RAM, ultra rápido)" \
-        "Swapfile de 4 GB" \
-        "Swapfile de 8 GB" \
-        "Sem Swap")"
+    selected_swap="$(get_swap_value "${raw_swap}")"
 
     # 8. Parâmetros de identificação e usuário
     render_step "Configurações de Identificação e Acesso:"
@@ -193,15 +158,10 @@ run_bare_metal_installation() {
 
     # 9. Seleção de Perfil de Interface Gráfica
     render_step "Escolha o Perfil de Interface do Aether OS:"
-    local selected_profile
-    selected_profile="$(prompt_choice "Selecione a interface gráfica desejada" \
-        "Aether-Plasma (KDE Plasma customizado minimal/dark)" \
-        "Aether-Hyprland (Wayland dinâmico focado em teclado e produtividade)")"
-
-    local profile_key="Aether-Plasma"
-    if [[ "${selected_profile}" == *"Aether-Hyprland"* ]]; then
-        profile_key="Aether-Hyprland"
-    fi
+    local raw_profile
+    raw_profile="$(prompt_choice "Selecione a interface gráfica desejada" "${AETHER_PROFILE_OPTIONS[@]}")"
+    local profile_key
+    profile_key="$(get_profile_value "${raw_profile}")"
 
     # 10. Resumo e confirmação final de instalação
     render_banner
@@ -247,6 +207,7 @@ run_bare_metal_installation() {
     setup_swap "${mount_point}" "${selected_swap}"
 
     configure_system_localization "${mount_point}" "${selected_timezone}" "${hostname}" "${selected_keymap}"
+    install_and_configure_gpu "${mount_point}"
     install_bootloader "${mount_point}" "${target_disk}"
 
     setup_chroot_payload "${mount_point}"

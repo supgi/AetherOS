@@ -88,9 +88,28 @@ execute_aether_desktop_phase() {
     render_success "Configuração da interface Wayland e dotfiles finalizada com sucesso."
 }
 
+# Preserva conexões de rede configuradas durante a sessão Live
+preserve_network_connections() {
+    local mount_point="${1:-/mnt}"
+    local live_nm_dir="/etc/NetworkManager/system-connections"
+    local dest_nm_dir="${mount_point}/etc/NetworkManager/system-connections"
+
+    if [[ -d "${live_nm_dir}" ]] && ls "${live_nm_dir}"/* >/dev/null 2>&1; then
+        render_step "Preservando conexões de rede Wi-Fi da mídia Live..."
+        mkdir -p "${dest_nm_dir}"
+        cp -a "${live_nm_dir}"/* "${dest_nm_dir}/" 2>/dev/null || true
+        chmod 600 "${dest_nm_dir}"/* 2>/dev/null || true
+        render_success "Credenciais e perfis de rede migrados com sucesso."
+    fi
+}
+
 # Realiza a desmontagem segura de todos os pontos de montagem do novo sistema
 cleanup_and_unmount() {
     local mount_point="${1:-/mnt}"
+
+    # Migra perfis de Wi-Fi antes de desmontar o sistema de arquivos
+    preserve_network_connections "${mount_point}"
+
     render_step "Sincronizando dados no disco e desmontando partições de ${mount_point}..."
 
     sync
